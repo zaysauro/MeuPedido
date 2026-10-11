@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, type FormEvent } from 'react';
 import { authClient } from '@/lib/auth-client';
+import LogoutButton from '@/components/logout-button';
 type Org = {id:string;name:string;slug:string;role:string};
 export default function OrganizationSetup() {
   const {data:session,isPending}=authClient.useSession();
