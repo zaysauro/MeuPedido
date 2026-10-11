@@ -15,6 +15,12 @@ export function createAuth() {
     baseURL: authUrl,
     secret: authSecret,
     emailAndPassword: { enabled: true, requireEmailVerification: false },
-    trustedOrigins: [authUrl],
+    // Explicit production host allowlist. Never trust arbitrary Origin/Host headers.
+    trustedOrigins: [
+      authUrl,
+      'https://meupedido-bruno-02a0.vercel.app',
+      'https://meupedido-seven.vercel.app',
+      'https://meupedido-git-main-bruno-02a0.vercel.app',
+    ],
   });
 }
