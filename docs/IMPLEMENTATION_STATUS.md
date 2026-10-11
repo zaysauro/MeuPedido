@@ -6,7 +6,7 @@ MeuCaixa é um produto independente. Asaas será integrado por último.
 
 ## Migrações Neon
 - Já executadas pelo proprietário anteriormente: 000_better_auth.sql, 001_organizations.sql, 002_menu_inventory.sql.
-- Pendentes de execução, nesta ordem: 004_restaurant_operations.sql, 005_order_checkout.sql, 006_order_payments.sql, 007_order_management.sql, 008_inventory_recipes.sql, 009_recipes.sql, 010_cash_register.sql.
+- Pendentes de execução, nesta ordem: 004_restaurant_operations.sql, 005_order_checkout.sql, 006_order_payments.sql, 007_order_management.sql, 008_inventory_recipes.sql, 009_recipes.sql, 010_cash_register.sql, 011_inventory_consumption.sql.
 - NÃO EXECUTAR 003_order_integrity.sql: rascunho legado incompatível.
 - Migrações futuras deverão ser adicionadas aqui e revisadas antes de executar.
 
@@ -16,6 +16,11 @@ MeuCaixa é um produto independente. Asaas será integrado por último.
 - Adicionais, PDV, pedidos, cozinha, comandas, transferência de itens e pagamentos parciais.
 - Estoque, movimentações, fichas técnicas e custo estimado.
 - Abertura, movimentação e fechamento de caixa.
+
+## Atualizações recentes
+- Criada função de baixa idempotente de ingredientes e endpoint explícito de consumo (011). Ainda não conectada automaticamente ao fluxo de venda; depende de validação das regras de negócio.
+- Criados relatórios de vendas, meios de pagamento, produtos mais vendidos e exportação CSV.
+- Os relatórios são brutos, não conciliados, e não representam lucro líquido.
 
 ## Pendências essenciais
 - Verificar compilação e testes end-to-end de todos os módulos, contratos entre API e banco, políticas de autorização.
