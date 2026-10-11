@@ -1,0 +1,1 @@
+export default function Home(){return <main style={{maxWidth:780,margin:'12vh auto',padding:24}}><h1>MeuPedido</h1><p>Sistema de gestão para restaurantes e lanchonetes.</p><p>A infraestrutura inicial está sendo preparada. Cadastro, pedidos e pagamentos ainda não estão habilitados.</p></main>}
