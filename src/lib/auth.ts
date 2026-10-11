@@ -10,6 +10,9 @@ export function createAuth() {
   if (!authSecret || authSecret.length < 32) throw new Error('BETTER_AUTH_SECRET deve ter pelo menos 32 caracteres');
   if (!authUrl) throw new Error('BETTER_AUTH_URL não configurada');
 
+  const vercelOrigins = [process.env.VERCEL_URL, process.env.VERCEL_BRANCH_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL]
+    .filter((host): host is string => Boolean(host))
+    .map(host => 'https://' + host.replace(/^https?:\/\//, '').replace(/\/$/, ''));
   return betterAuth({
     database: new Pool({ connectionString: databaseUrl, max: 5 }),
     baseURL: authUrl,
@@ -21,6 +24,7 @@ export function createAuth() {
       'https://meupedido-bruno-02a0.vercel.app',
       'https://meupedido-seven.vercel.app',
       'https://meupedido-git-main-bruno-02a0.vercel.app',
+      ...vercelOrigins,
     ],
   });
 }
