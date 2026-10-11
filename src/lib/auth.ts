@@ -1,0 +1,21 @@
+import 'server-only';
+import { betterAuth } from 'better-auth';
+import { Pool } from '@neondatabase/serverless';
+
+const databaseUrl = process.env.DATABASE_URL;
+const authSecret = process.env.BETTER_AUTH_SECRET;
+const authUrl = process.env.BETTER_AUTH_URL;
+
+if (!databaseUrl) throw new Error('DATABASE_URL não configurada');
+if (!authSecret || authSecret.length < 32) throw new Error('BETTER_AUTH_SECRET deve ter pelo menos 32 caracteres');
+if (!authUrl) throw new Error('BETTER_AUTH_URL não configurada');
+
+const pool = new Pool({ connectionString: databaseUrl, max: 5 });
+
+export const auth = betterAuth({
+  database: pool,
+  baseURL: authUrl,
+  secret: authSecret,
+  emailAndPassword: { enabled: true, requireEmailVerification: false },
+  trustedOrigins: [authUrl],
+});
