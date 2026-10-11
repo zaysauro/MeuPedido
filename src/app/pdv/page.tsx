@@ -1,0 +1,28 @@
+'use client';
+import {useEffect,useState} from 'react';
+import {authClient} from '@/lib/auth-client';
+type Org={id:string;name:string};type Item={id:string;name:string;price_cents:number;available:boolean};
+type Line={menuItemId:string;name:string;price:number;quantity:number;notes:string;addons:string[]};
+export default function PDV(){
+ const {data:session,isPending}=authClient.useSession();
+ const [orgs,setOrgs]=useState<Org[]>([]),[org,setOrg]=useState(''),[items,setItems]=useState<Item[]>([]),[tables,setTables]=useState<{id:string;label:string}[]>([]),[lines,setLines]=useState<Line[]>([]);
+ const [channel,setChannel]=useState('balcao'),[tableId,setTableId]=useState(''),[notes,setNotes]=useState(''),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
+ useEffect(()=>{if(!session)return;fetch('/api/organizations').then(r=>r.json()).then(d=>{setOrgs(d.organizations||[]);setOrg(d.organizations?.[0]?.id||'')}).catch(()=>setMessage('Falha ao carregar estabelecimentos'))},[session]);
+ useEffect(()=>{if(!org)return;setLines([]);Promise.all([fetch('/api/menu?organizationId='+encodeURIComponent(org)),fetch('/api/restaurant?resource=tables&organizationId='+encodeURIComponent(org))]).then(async([a,b])=>{if(!a.ok||!b.ok)throw Error();setItems((await a.json()).items||[]);setTables((await b.json()).items||[])}).catch(()=>setMessage('Falha ao carregar cardápio ou mesas. Verifique a migração 004.'))},[org]);
+ const total=lines.reduce((n,l)=>n+l.price*l.quantity,0);
+ function add(item:Item){setLines(old=>{const found=old.find(l=>l.menuItemId===item.id);return found?old.map(l=>l.menuItemId===item.id?{...l,quantity:Math.min(l.quantity+1,99)}:l):[...old,{menuItemId:item.id,name:item.name,price:item.price_cents,quantity:1,notes:'',addons:[]}]})}
+ async function save(){if(!org||!lines.length)return;setBusy(true);setMessage('');try{const r=await fetch('/api/restaurant/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({organizationId:org,channel,tableId:channel==='mesa'?tableId:null,customerId:null,notes,items:lines.map(({menuItemId,quantity,notes,addons})=>({menuItemId,quantity,notes,addons}))})});if(!r.ok)throw Error((await r.json()).error||'Erro');const d=await r.json();setLines([]);setNotes('');setMessage('Pedido registrado! ID: '+d.orderId)}catch(e){setMessage('Não foi possível registrar: '+(e instanceof Error?e.message:'erro'))}finally{setBusy(false)}}
+ if(isPending)return <main style={{padding:24}}>Carregando...</main>;
+ if(!session)return <main style={{padding:24}}><a href="/login">Entrar</a></main>;
+ return <main style={{maxWidth:1150,margin:'30px auto',padding:24,color:'#173d2d'}}><a href="/painel">← Painel</a><h1>PDV · MeuPedido</h1><p>Selecione os produtos e envie o pedido para a cozinha.</p>
+ <label>Estabelecimento <select value={org} onChange={e=>setOrg(e.target.value)}>{orgs.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select></label>
+ <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:24,marginTop:24}}>
+ <section><h2>Cardápio</h2><div style={{display:'grid',gap:10}}>{items.filter(i=>i.available).map(i=><button key={i.id} onClick={()=>add(i)} style={{textAlign:'left',padding:16,border:'1px solid #c9ded2',borderRadius:10,background:'white',cursor:'pointer'}}><strong>{i.name}</strong><br/>{(i.price_cents/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})} <span style={{float:'right'}}>+ Adicionar</span></button>)}</div></section>
+ <section><h2>Pedido atual</h2><label>Tipo <select value={channel} onChange={e=>setChannel(e.target.value)}>{[['balcao','Balcão'],['mesa','Mesa'],['retirada','Retirada'],['delivery','Delivery']].map(([v,n])=><option key={v} value={v}>{n}</option>)}</select></label>
+ {channel==='mesa'&&<label style={{display:'block',marginTop:12}}>Mesa <select value={tableId} onChange={e=>setTableId(e.target.value)}><option value="">Selecione</option>{tables.map(t=><option key={t.id} value={t.id}>{t.label}</option>)}</select></label>}
+ {lines.map(l=><article key={l.menuItemId} style={{padding:12,borderBottom:'1px solid #ddd'}}><strong>{l.name}</strong><div style={{display:'flex',gap:8,alignItems:'center',marginTop:8}}><button onClick={()=>setLines(a=>a.map(x=>x.menuItemId===l.menuItemId?{...x,quantity:Math.max(1,x.quantity-1)}:x))}>−</button>{l.quantity}<button onClick={()=>setLines(a=>a.map(x=>x.menuItemId===l.menuItemId?{...x,quantity:Math.min(99,x.quantity+1)}:x))}>+</button><button onClick={()=>setLines(a=>a.filter(x=>x.menuItemId!==l.menuItemId))}>Remover</button></div><label>Observação<input maxLength={500} value={l.notes} onChange={e=>setLines(a=>a.map(x=>x.menuItemId===l.menuItemId?{...x,notes:e.target.value}:x))} style={{display:'block',padding:8,width:'95%'}}/></label></article>)}
+ <label>Observações gerais<textarea value={notes} maxLength={1000} onChange={e=>setNotes(e.target.value)} style={{display:'block',width:'95%',padding:8}}/></label>
+ <h2>Total: {(total/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</h2>
+ <button disabled={busy||!lines.length||(channel==='mesa'&&!tableId)} onClick={save} style={{background:'#17663c',color:'white',padding:14,border:0,borderRadius:8,width:'100%',cursor:'pointer'}}>{busy?'Registrando...':'Registrar pedido'}</button>
+ <p style={{fontSize:13}}>O pedido é registrado como pendente de pagamento. Fechamento de caixa será implementado separadamente.</p></section></div>{message&&<p role="status">{message}</p>}</main>
+}
