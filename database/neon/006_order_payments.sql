@@ -16,9 +16,9 @@ BEGIN
  IF v_paid+p_amount>v_order.total_cents THEN RAISE EXCEPTION 'payment_exceeds_balance'; END IF;
  INSERT INTO restaurant_payments(organization_id,order_id,method,amount_cents) VALUES(p_org,p_order,p_method,p_amount);
  v_paid:=v_paid+p_amount;
- UPDATE restaurant_orders SET payment_status=CASE WHEN v_paid=total_cents THEN 'pago' WHEN v_paid>0 THEN 'parcial' ELSE 'pendente' END,
+ UPDATE restaurant_orders AS o SET payment_status=CASE WHEN v_paid=o.total_cents THEN 'pago' WHEN v_paid>0 THEN 'parcial' ELSE 'pendente' END,
  closed_at=CASE WHEN v_paid=total_cents THEN now() ELSE NULL END,updated_at=now()
- WHERE id=p_order;
+ WHERE o.id=p_order AND o.organization_id=p_org;
  RETURN QUERY SELECT p_order,v_paid,v_order.total_cents-v_paid,CASE WHEN v_paid=v_order.total_cents THEN 'pago' WHEN v_paid>0 THEN 'parcial' ELSE 'pendente' END;
 END $$;
 CREATE INDEX IF NOT EXISTS restaurant_payments_org_order_idx ON restaurant_payments(organization_id,order_id);
