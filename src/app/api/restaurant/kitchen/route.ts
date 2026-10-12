@@ -28,12 +28,7 @@ export async function PATCH(req:Request){
   const b=await req.json() as Record<string,unknown>;
   if(typeof b.organizationId!=='string'||!uuid.test(b.organizationId)||typeof b.orderId!=='string'||!uuid.test(b.orderId)||!['preparando','pronto','entregue'].includes(String(b.status)))return NextResponse.json({error:'invalid_fields'},{status:400});
   const sql=getDb();
-  const rows=await sql`UPDATE restaurant_orders o SET status=${b.status as string},updated_at=now()
-  WHERE o.id=${b.orderId}::uuid AND o.organization_id=${b.organizationId}::uuid
-  AND ((o.status='recebido' AND ${b.status as string}='preparando') OR (o.status='preparando' AND ${b.status as string}='pronto') OR (o.status='pronto' AND ${b.status as string}='entregue'))
-  AND EXISTS(SELECT 1 FROM organization_members m WHERE m.organization_id=o.organization_id AND m.user_id=${session.user.id})
-  RETURNING id,status`;
-  if(!rows.length)return NextResponse.json({error:'forbidden_or_invalid_transition'},{status:409});
+  const rows=await sql`SELECT * FROM restaurant_kitchen_transition(${b.organizationId}::uuid,${session.user.id},${b.orderId}::uuid,${b.status as string})`;
   return NextResponse.json({order:rows[0]});
  }catch{return NextResponse.json({error:'service_unavailable'},{status:503})}
 }
