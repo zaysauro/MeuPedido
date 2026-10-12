@@ -8,10 +8,10 @@ BEGIN
  IF NEW.status IS NOT DISTINCT FROM OLD.status THEN RETURN NEW; END IF;
  SELECT status INTO v_order_status FROM restaurant_orders
  WHERE id=NEW.order_id AND organization_id=NEW.organization_id FOR UPDATE;
- IF v_order_status NOT IN ('recebido','preparando','pronto','entregue') THEN
+ IF v_order_status NOT IN ('recebido','preparando','pronto','entregue','cancelado') THEN
   RAISE EXCEPTION 'order_not_editable';
  END IF;
- IF NEW.status='cancelado' AND v_order_status<>'recebido' THEN
+ IF NEW.status='cancelado' AND v_order_status NOT IN ('recebido','cancelado') THEN
   RAISE EXCEPTION 'cannot_cancel_prepared_item';
  END IF;
  RETURN NEW;
