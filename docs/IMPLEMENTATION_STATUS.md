@@ -6,7 +6,7 @@ MeuCaixa é um produto independente. Asaas será integrado por último.
 
 ## Migrações Neon
 - Já executadas pelo proprietário anteriormente: 000_better_auth.sql, 001_organizations.sql, 002_menu_inventory.sql.
-- Pendentes de execução, nesta ordem: 004_restaurant_operations.sql, 005_order_checkout.sql, 006_order_payments.sql, 007_order_management.sql, 008_inventory_recipes.sql, 009_recipes.sql, 010_cash_register.sql, 011_inventory_consumption.sql, 012_kitchen_stock_transition.sql.
+- Pendentes de execução, nesta ordem: 004_restaurant_operations.sql, 005_order_checkout.sql, 006_order_payments.sql, 007_order_management.sql, 008_inventory_recipes.sql, 009_recipes.sql, 010_cash_register.sql, 011_inventory_consumption.sql, 012_kitchen_stock_transition.sql, 013_delivery_addresses.sql, 014_delivery_checkout.sql.
 - NÃO EXECUTAR 003_order_integrity.sql: rascunho legado incompatível.
 - Migrações futuras deverão ser adicionadas aqui e revisadas antes de executar.
 
@@ -45,3 +45,9 @@ Commits e telas não significam sistema validado. Só marcar como pronto depois 
 - 013_delivery_addresses.sql: endereços por cliente e campos de endereço/taxa em pedidos. Executar após 012; não executar ainda sem revisar o fluxo de checkout.
 - /api/restaurant/addresses: cadastro e consulta de endereços com checagem de associação ao estabelecimento.
 - Pendente: integrar endereço e taxa ao checkout, selecionar endereço na interface, testar validações, conciliação e impressão.
+
+## Delivery: estado atual
+- PDV permite selecionar cliente, endereco e informar taxa de entrega.
+- Migracao 014 faz checkout de delivery atomico, validando que endereco pertence ao cliente e estabelecimento.
+- Pagamento e total consideram taxa, mas ainda falta revisao visual, testes de build e integracao.
+- Caixa ainda nao possui conciliacao automatica. Nao executar migrações antes da revisao.
