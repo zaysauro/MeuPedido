@@ -60,3 +60,13 @@ Commits e telas não significam sistema validado. Só marcar como pronto depois 
 - CI de TypeScript em .github/workflows/typecheck.yml; aguardar resultado antes de considerar validado.
 - Detalhes de pedido agora incluem endereco da entrega.
 - IMPORTANTE: migrações 004 a 021 nao executadas, nao rodar 003; ainda falta revisar contratos e testes end-to-end.
+
+## Revisao de integracao (2026-10-12)
+- Corrigida validacao da taxa de delivery no PDV: expressao regular reconhece numeros decimais.
+- Corrigido total visual do pedido para incluir taxa de entrega.
+- Corrigido endpoint de delivery para preservar nome e telefone do entregador quando nao enviados.
+- Comprovante inclui endereco e taxa de entrega.
+- Cozinha retorna 409 para transicao invalida e estoque insuficiente.
+- Migração 022 exige validacao em banco junto do cancelamento de pedido.
+- Nao executar migrações sem backup e revisao; 004-022 ainda nao aplicadas.
+- Testes de compilacao e fluxo completo ainda nao confirmados.
