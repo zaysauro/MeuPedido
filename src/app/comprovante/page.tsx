@@ -7,7 +7,7 @@ const money=(v:number)=>((Number(v)||0)/100).toLocaleString('pt-BR',{style:'curr
 export default function Comprovante(){
  const {data:session,isPending}=authClient.useSession();
  const [orgs,setOrgs]=useState<Org[]>([]),[org,setOrg]=useState(''),[order,setOrder]=useState(''),[detail,setDetail]=useState<Detail|null>(null),[message,setMessage]=useState('');
- useEffect(()=>{const q=new URLSearchParams(window.location.search);setOrder(q.get('orderId')||'');if(session)fetch('/api/organizations').then(r=>r.json()).then(d=>{setOrgs(d.organizations||[]);setOrg(d.organizations?.[0]?.id||'')}).catch(()=>setMessage('Erro ao carregar estabelecimento'))},[session]);
+ useEffect(()=>{const q=new URLSearchParams(window.location.search);setOrder(q.get('orderId')||'');if(session)fetch('/api/organizations').then(r=>r.json()).then(d=>{setOrgs(d.organizations||[]);setOrg(d.organizations?.find((o:Org)=>o.id===q.get('organizationId'))?.id||d.organizations?.[0]?.id||'')}).catch(()=>setMessage('Erro ao carregar estabelecimento'))},[session]);
  useEffect(()=>{if(!org||!order)return;fetch('/api/restaurant/order-detail?organizationId='+encodeURIComponent(org)+'&orderId='+encodeURIComponent(order),{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).then(setDetail).catch(()=>setMessage('Nao foi possivel carregar o pedido'))},[org,order]);
  if(isPending)return <main>Carregando...</main>;
  if(!session)return <main><a href="/login">Entrar</a></main>;
