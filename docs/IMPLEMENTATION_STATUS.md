@@ -51,3 +51,12 @@ Commits e telas não significam sistema validado. Só marcar como pronto depois 
 - Migracao 014 faz checkout de delivery atomico, validando que endereco pertence ao cliente e estabelecimento.
 - Pagamento e total consideram taxa, mas ainda falta revisao visual, testes de build e integracao.
 - Caixa ainda nao possui conciliacao automatica. Nao executar migrações antes da revisao.
+
+## Novas entregas em codigo
+- 018/019: restricoes de integridade para pagamentos/turnos e transferencias apos inicio do preparo.
+- 020/021: acompanhamento de delivery independente da cozinha, com transicoes atomicas.
+- /api/restaurant/delivery e /entregas: listagem e controle de entrega por estabelecimento.
+- /cozinha/imprimir: ticket de producao nao fiscal via navegador.
+- CI de TypeScript em .github/workflows/typecheck.yml; aguardar resultado antes de considerar validado.
+- Detalhes de pedido agora incluem endereco da entrega.
+- IMPORTANTE: migrações 004 a 021 nao executadas, nao rodar 003; ainda falta revisar contratos e testes end-to-end.
