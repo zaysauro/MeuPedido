@@ -30,5 +30,9 @@ export async function PATCH(req:Request){
   const sql=getDb();
   const rows=await sql`SELECT * FROM restaurant_kitchen_transition(${b.organizationId}::uuid,${session.user.id},${b.orderId}::uuid,${b.status as string})`;
   return NextResponse.json({order:rows[0]});
- }catch{return NextResponse.json({error:'service_unavailable'},{status:503})}
+ }catch(error){
+  const message=error instanceof Error?error.message:'';
+  const code=message.includes('insufficient_stock')?'insufficient_stock':message.includes('invalid_transition')?'invalid_transition':null;
+  return NextResponse.json({error:code||'service_unavailable'},{status:code?409:503});
+ }
 }
