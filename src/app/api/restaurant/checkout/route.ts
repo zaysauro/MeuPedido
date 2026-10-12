@@ -20,7 +20,15 @@ export async function POST(req:Request){
    if(typeof v.menuItemId!=='string'||!uuid.test(v.menuItemId)||!Number.isInteger(v.quantity)||Number(v.quantity)<1||Number(v.quantity)>99||typeof v.notes!=='string'||v.notes.length>500||!Array.isArray(v.addons)||v.addons.length>20||v.addons.some(x=>typeof x!=='string'||!uuid.test(x))||new Set(v.addons).size!==v.addons.length)return NextResponse.json({error:'invalid_item'},{status:400});
   }
   const sql=getDb();
-  const rows=await sql`SELECT restaurant_create_order(${b.organizationId}::uuid,${session.user.id},${b.channel as string},${(b.tableId as string)||null}::uuid,${(b.customerId as string)||null}::uuid,${b.notes as string},${JSON.stringify(b.items)}::jsonb) AS id`;
+  const delivery=b.channel==='delivery';
+  if(delivery){
+   if(typeof b.customerId!=='string'||!uuid.test(b.customerId)||typeof b.deliveryAddressId!=='string'||!uuid.test(b.deliveryAddressId)||!Number.isSafeInteger(b.deliveryFeeCents)||Number(b.deliveryFeeCents)<0||Number(b.deliveryFeeCents)>1000000)return NextResponse.json({error:'invalid_delivery'},{status:400});
+  }else if(b.deliveryAddressId!=null||b.deliveryFeeCents!=null){
+   return NextResponse.json({error:'unexpected_delivery_fields'},{status:400});
+  }
+  const rows=delivery
+   ?await sql`SELECT restaurant_create_delivery_order(${b.organizationId}::uuid,${session.user.id},${b.customerId as string}::uuid,${b.deliveryAddressId as string}::uuid,${b.deliveryFeeCents as number},${b.notes as string},${JSON.stringify(b.items)}::jsonb) AS id`
+   :await sql`SELECT restaurant_create_order(${b.organizationId}::uuid,${session.user.id},${b.channel as string},${(b.tableId as string)||null}::uuid,${(b.customerId as string)||null}::uuid,${b.notes as string},${JSON.stringify(b.items)}::jsonb) AS id`;
   return NextResponse.json({orderId:rows[0].id},{status:201});
  }catch{return NextResponse.json({error:'could_not_create_order'},{status:400})}
 }
