@@ -22,7 +22,7 @@ MeuCaixa é um produto independente. Asaas será integrado por último.
 - Criados relatórios de vendas, meios de pagamento, produtos mais vendidos e exportação CSV.
 - Os relatórios são brutos, não conciliados, e não representam lucro líquido.
 
-- A transição de cozinha agora chama a função SQL 012; ao iniciar preparo, desconta ingredientes em transação única. Requer migrações 011 e 012 e validação em Neon.\n- Mapa de mesas em /mesas: ocupação provisória calculada com base nos 150 pedidos recentes.\n\n## Pendências essenciais
+- A transição de cozinha agora chama a função SQL 012; ao iniciar preparo, desconta ingredientes em transação única. Requer migrações 011 e 012 e validação em Neon.\n- Mapa de mesas em /mesas: consulta dedicada de todas as comandas abertas, sem limite artificial de 150; link para comanda selecionada.\n\n- Comandas: inclusão de produtos adicionais em pedidos abertos, usando a função SQL 007. Adicionais novos ainda não disponíveis neste formulário.\n\n## Pendências essenciais
 - Verificar compilação e testes end-to-end de todos os módulos, contratos entre API e banco, políticas de autorização.
 - Corrigir o login/cadastro e as origens confiáveis.
 - Variantes de produto, upload seguro de fotos e organização avançada do cardápio.
