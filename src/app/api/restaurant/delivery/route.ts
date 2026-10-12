@@ -37,7 +37,7 @@ export async function PATCH(req:Request){
  ||(b.driverPhone!=null&&(typeof b.driverPhone!=='string'||b.driverPhone.length>40)))
  return NextResponse.json({error:'invalid_fields'},{status:400});
  const sql=getDb();
- const rows=await sql`SELECT restaurant_update_delivery(${b.organizationId}::uuid,${session.user.id},${b.orderId}::uuid,${b.status as string},${String(b.driverName||'')},${String(b.driverPhone||'')}) AS status`;
+ const rows=await sql`SELECT restaurant_update_delivery(${b.organizationId}::uuid,${session.user.id},${b.orderId}::uuid,${b.status as string},${typeof b.driverName==='string'?b.driverName:null},${typeof b.driverPhone==='string'?b.driverPhone:null}) AS status`;
  return NextResponse.json({status:rows[0].status});
  }catch{return NextResponse.json({error:'delivery_transition_rejected'},{status:409})}
 }
