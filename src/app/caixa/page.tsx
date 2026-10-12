@@ -2,7 +2,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { authClient } from '@/lib/auth-client';
 type Org = {id:string;name:string};
-type Session = {id:string;opened_at:string;closed_at:string|null;opening_cents:number;counted_cents:number|null;net_movements_cents:number};
+type Session = {id:string;opened_at:string;closed_at:string|null;opening_cents:number;counted_cents:number|null;net_movements_cents:number;cash_sales_cents:number};
 const money=(n:number)=>((n||0)/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 export default function Caixa() {
  const {data:session,isPending}=authClient.useSession();
@@ -21,7 +21,7 @@ export default function Caixa() {
  <label>Estabelecimento <select value={org} onChange={e=>setOrg(e.target.value)}>{orgs.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select></label>
  <section style={{marginTop:24,padding:20,border:'1px solid #c9ded2',borderRadius:12}}>
  <h2>{active?'Caixa aberto':'Caixa fechado'}</h2>
- {active&&<><p>Aberto em {new Date(active.opened_at).toLocaleString('pt-BR')}</p><p>Fundo inicial: {money(active.opening_cents)}</p><p>Suprimentos e sangrias (líquido): {money(Number(active.net_movements_cents))}</p></>}
+ {active&&<><p>Aberto em {new Date(active.opened_at).toLocaleString('pt-BR')}</p><p>Fundo inicial: {money(active.opening_cents)}</p><p>Suprimentos e sangrias (líquido): {money(Number(active.net_movements_cents))}</p><p>Vendas em dinheiro: {money(Number(active.cash_sales_cents))}</p><p>Esperado no caixa: {money(Number(active.opening_cents)+Number(active.net_movements_cents)+Number(active.cash_sales_cents))}</p></>}
  <form onSubmit={submit} style={{display:'grid',gap:12,maxWidth:400}}>
  {active?<label>Operação <select value={action==='open'?'move':action} onChange={e=>setAction(e.target.value)}><option value="move">Movimentar</option><option value="close">Fechar caixa</option></select></label>:<p>Informe o valor inicial para abrir um novo turno.</p>}
  {active&&action!=='close'&&<label>Tipo<select value={kind} onChange={e=>setKind(e.target.value)}><option value="suprimento">Suprimento</option><option value="sangria">Sangria</option></select></label>}
@@ -29,7 +29,7 @@ export default function Caixa() {
  {active&&action!=='close'&&<label>Motivo<textarea maxLength={500} value={notes} onChange={e=>setNotes(e.target.value)} style={{display:'block',padding:10,width:'100%'}}/></label>}
  <button disabled={busy||!org} style={{background:'#17663c',color:'white',border:0,padding:14,borderRadius:8}}>{busy?'Salvando...':!active?'Abrir caixa':action==='close'?'Confirmar fechamento':'Registrar movimentação'}</button>
  </form></section>
- <h2>Turnos recentes</h2>{sessions.map(s=><article key={s.id} style={{padding:12,borderBottom:'1px solid #ddd'}}><strong>{s.closed_at?'Fechado':'Aberto'}</strong> · {new Date(s.opened_at).toLocaleString('pt-BR')} · Fundo: {money(s.opening_cents)}{s.closed_at&&<span> · Contagem: {money(Number(s.counted_cents))}</span>}</article>)}
- <p style={{fontSize:13}}>A conferência automática com pagamentos em dinheiro ainda não está conectada. O valor contado é registrado, mas não representa conciliação financeira.</p>
+ <h2>Turnos recentes</h2>{sessions.map(s=><article key={s.id} style={{padding:12,borderBottom:'1px solid #ddd'}}><strong>{s.closed_at?'Fechado':'Aberto'}</strong> · {new Date(s.opened_at).toLocaleString('pt-BR')} · Fundo: {money(s.opening_cents)}{s.closed_at&&<span> · Contagem: {money(Number(s.counted_cents))} · Diferença: {money(Number(s.counted_cents)-Number(s.opening_cents)-Number(s.net_movements_cents)-Number(s.cash_sales_cents))}</span>}</article>)}
+ <p style={{fontSize:13}}>Conferência estimada: fundo inicial + suprimentos - sangrias + pagamentos em dinheiro vinculados ao turno. Pagamentos anteriores à migração 016 não serão vinculados retroativamente.</p>
  {message&&<p role="status">{message}</p>}</main>;
 }
