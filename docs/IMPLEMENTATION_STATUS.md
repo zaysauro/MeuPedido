@@ -39,3 +39,9 @@ MeuCaixa é um produto independente. Asaas será integrado por último.
 
 ## Regra de prontidão
 Commits e telas não significam sistema validado. Só marcar como pronto depois de migração, build, integração e testes reais.
+
+## Entregas recentes (ainda sem deploy)
+- PDV: seleção de cliente cadastrado ao criar pedido; cliente opcional.
+- 013_delivery_addresses.sql: endereços por cliente e campos de endereço/taxa em pedidos. Executar após 012; não executar ainda sem revisar o fluxo de checkout.
+- /api/restaurant/addresses: cadastro e consulta de endereços com checagem de associação ao estabelecimento.
+- Pendente: integrar endereço e taxa ao checkout, selecionar endereço na interface, testar validações, conciliação e impressão.
