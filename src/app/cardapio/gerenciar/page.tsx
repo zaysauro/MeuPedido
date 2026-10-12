@@ -2,7 +2,7 @@
 import {useEffect,useState,type FormEvent} from 'react';
 import {authClient} from '@/lib/auth-client';
 type Org={id:string;name:string};type Category={id:string;name:string};
-type Product={id:string;name:string;description:string|null;price_cents:number;image_url:string|null;available:boolean;category_name:string|null};
+type Product={id:string;name:string;description:string|null;price_cents:number;image_url:string|null;available:boolean;category_name:string|null;category_id:string|null};
 const empty={name:'',description:'',price:'',imageUrl:'',categoryId:'',available:true};
 export default function GerenciarCardapio(){
  const {data:session,isPending}=authClient.useSession();
@@ -11,7 +11,7 @@ export default function GerenciarCardapio(){
  useEffect(()=>{if(!session)return;fetch('/api/organizations').then(r=>r.json()).then(d=>{setOrgs(d.organizations||[]);setOrg(d.organizations?.[0]?.id||'')}).catch(()=>setMessage('Não foi possível carregar estabelecimentos.'))},[session]);
  async function refresh(){if(!org)return;try{const [a,b]=await Promise.all([fetch('/api/menu?organizationId='+encodeURIComponent(org)),fetch('/api/restaurant?resource=categories&organizationId='+encodeURIComponent(org))]);if(!a.ok||!b.ok)throw Error();setItems((await a.json()).items||[]);setCategories((await b.json()).items||[])}catch{setMessage('Não foi possível carregar o cardápio.')}}
  useEffect(()=>{setEditing('');setForm(empty);void refresh()},[org]);
- function edit(i:Product){setEditing(i.id);setForm({name:i.name,description:i.description||'',price:(i.price_cents/100).toFixed(2).replace('.',','),imageUrl:i.image_url||'',categoryId:categories.find(c=>c.name===i.category_name)?.id||'',available:i.available})}
+ function edit(i:Product){setEditing(i.id);setForm({name:i.name,description:i.description||'',price:(i.price_cents/100).toFixed(2).replace('.',','),imageUrl:i.image_url||'',categoryId:i.category_id||'',available:i.available})}
  async function save(e:FormEvent){e.preventDefault();const price=Number(form.price.replace(',','.'));const priceCents=Math.round(price*100);if(!Number.isFinite(price)||!Number.isSafeInteger(priceCents)||priceCents<0){setMessage('Preço inválido.');return}setBusy(true);setMessage('');try{const r=await fetch('/api/menu/manage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({organizationId:org,action:editing?'update':'create',itemId:editing||undefined,name:form.name,description:form.description,priceCents,imageUrl:form.imageUrl,categoryId:form.categoryId||null,available:form.available})});if(!r.ok)throw Error((await r.json()).error);setForm(empty);setEditing('');setMessage('Produto salvo.');await refresh()}catch(e){setMessage(e instanceof Error?e.message:'Erro ao salvar')}finally{setBusy(false)}}
  async function remove(i:Product){if(!confirm('Excluir '+i.name+'? Produtos já vendidos devem ser desativados.'))return;setBusy(true);try{const r=await fetch('/api/menu/manage',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({organizationId:org,action:'delete',itemId:i.id})});if(!r.ok)throw Error((await r.json()).error);await refresh();setMessage('Produto excluído.')}catch(e){setMessage(e instanceof Error?e.message:'Erro ao excluir')}finally{setBusy(false)}}
  if(isPending)return <main style={{padding:24}}>Carregando...</main>;
