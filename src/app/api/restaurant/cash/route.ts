@@ -14,6 +14,7 @@ export async function GET(req: Request) {
   if (!org || !uuid.test(org)) return NextResponse.json({error:'invalid_organization'},{status:400});
   const sql = getDb();
   const sessions = await sql`SELECT s.id,s.opened_at,s.closed_at,s.opening_cents,s.counted_cents,s.opened_by,
+    COALESCE((SELECT SUM(p.amount_cents) FROM restaurant_payments p WHERE p.organization_id=s.organization_id AND p.cash_session_id=s.id AND p.method='dinheiro'),0) AS cash_sales_cents,
     COALESCE((SELECT SUM(CASE WHEN m.kind='suprimento' THEN m.amount_cents ELSE -m.amount_cents END)
       FROM restaurant_cash_movements m WHERE m.organization_id=s.organization_id AND m.session_id=s.id),0) AS net_movements_cents
     FROM restaurant_cash_sessions s WHERE s.organization_id=${org}::uuid
