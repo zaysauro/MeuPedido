@@ -2,7 +2,7 @@
 import {useEffect,useState} from 'react';
 import {authClient} from '@/lib/auth-client';
 type Org={id:string;name:string};
-type Detail={order:{order_number:number;channel:string;total_cents:number;paid_cents:number;created_at:string;status:string};items:{id:string;name_snapshot:string;quantity:number;unit_price_cents:number;addons_cents:number;notes:string|null}[]};
+type Detail={order:{order_number:number;channel:string;total_cents:number;paid_cents:number;created_at:string;status:string;delivery_fee_cents:number;delivery_street:string|null;delivery_number:string|null;delivery_neighborhood:string|null;delivery_city:string|null};items:{id:string;name_snapshot:string;quantity:number;unit_price_cents:number;addons_cents:number;notes:string|null}[]};
 const money=(v:number)=>((Number(v)||0)/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 export default function Comprovante(){
  const {data:session,isPending}=authClient.useSession();
@@ -15,7 +15,7 @@ export default function Comprovante(){
  <div className="no-print"><a href="/comandas">Voltar</a><label> Estabelecimento <select value={org} onChange={e=>setOrg(e.target.value)}>{orgs.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select></label><button onClick={()=>window.print()} disabled={!detail}>Imprimir</button></div>
  {detail&&<article><h1 style={{textAlign:'center'}}>{orgs.find(o=>o.id===org)?.name||'MeuPedido'}</h1><p style={{textAlign:'center'}}>Comprovante de pedido — nao fiscal</p><hr/><p>Pedido #{detail.order.order_number}</p><p>{new Date(detail.order.created_at).toLocaleString('pt-BR')}</p><p>Tipo: {detail.order.channel}</p><hr/>
  {detail.items.map(i=><div key={i.id}><p>{i.quantity} x {i.name_snapshot} — {money((i.unit_price_cents+i.addons_cents)*i.quantity)}</p>{i.notes&&<small>{i.notes}</small>}</div>)}
- <hr/><h2>Total: {money(detail.order.total_cents)}</h2><p>Pago: {money(detail.order.paid_cents)}</p><p>Saldo: {money(Math.max(0,detail.order.total_cents-Number(detail.order.paid_cents)))}</p><p style={{textAlign:'center'}}>Obrigado pela preferencia!</p></article>}
+ {detail.order.delivery_street&&<p>Entrega: {detail.order.delivery_street}, {detail.order.delivery_number} - {detail.order.delivery_neighborhood}, {detail.order.delivery_city}</p>}{detail.order.delivery_fee_cents>0&&<p>Taxa de entrega: {money(detail.order.delivery_fee_cents)}</p>}<hr/><h2>Total: {money(detail.order.total_cents)}</h2><p>Pago: {money(detail.order.paid_cents)}</p><p>Saldo: {money(Math.max(0,detail.order.total_cents-Number(detail.order.paid_cents)))}</p><p style={{textAlign:'center'}}>Obrigado pela preferencia!</p></article>}
  {message&&<p role="alert">{message}</p>}
  <style jsx global>{`@media print{.no-print{display:none!important}body{margin:0;background:#fff}@page{size:80mm auto;margin:3mm}}`}</style>
  </main>;
