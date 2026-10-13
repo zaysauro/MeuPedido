@@ -14,5 +14,5 @@ export default function LoginPage(){
  <label>E-mail<input required type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} style={{display:'block',width:'100%',boxSizing:'border-box',padding:12,marginTop:5}}/></label>
  <label>Senha<input required type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} style={{display:'block',width:'100%',boxSizing:'border-box',padding:12,marginTop:5}}/></label>
  <button disabled={busy} style={{padding:14,background:'#176d43',color:'white',border:0,borderRadius:10,fontWeight:700}}>{busy?'Entrando...':'Entrar'}</button>{message&&<p role="alert" style={{color:'#a22'}}>{message}</p>}
- </form><p>Primeira vez aqui? <Link href="/cadastro">Criar conta</Link></p></div></main>;
+ </form><p><Link href="/recuperar-senha">Esqueci minha senha</Link></p><p>Primeira vez aqui? <Link href="/cadastro">Criar conta</Link></p></div></main>;
 }

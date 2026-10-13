@@ -1,9 +1,11 @@
 import 'server-only';
+import {databaseUrl as verifiedDatabaseUrl} from './db';
 import { betterAuth } from 'better-auth';
+import {emailConfigured,sendAccountEmail} from './email';
 import { Pool } from '@neondatabase/serverless';
 
-export function createAuth() {
-  const databaseUrl = process.env.DATABASE_URL;
+function buildAuth() {
+  const databaseUrl = verifiedDatabaseUrl();
   const authSecret = process.env.BETTER_AUTH_SECRET;
   const authUrl = process.env.BETTER_AUTH_URL;
   if (!databaseUrl) throw new Error('DATABASE_URL não configurada');
@@ -17,10 +19,14 @@ export function createAuth() {
     database: new Pool({ connectionString: databaseUrl, max: 5 }),
     baseURL: authUrl,
     secret: authSecret,
-    emailAndPassword: { enabled: true, requireEmailVerification: false },
+    emailAndPassword: { enabled: true, requireEmailVerification: emailConfigured()&&process.env.REQUIRE_EMAIL_VERIFICATION==='true', revokeSessionsOnPasswordReset:true,
+      ...(emailConfigured()?{sendResetPassword:async({user,url}:{user:{email:string};url:string})=>sendAccountEmail(user.email,'Redefina sua senha',url)}:{}) },
+    emailVerification:{sendOnSignUp:emailConfigured()&&process.env.REQUIRE_EMAIL_VERIFICATION==='true',sendOnSignIn:true,autoSignInAfterVerification:true,
+      ...(emailConfigured()?{sendVerificationEmail:async({user,url}:{user:{email:string};url:string})=>sendAccountEmail(user.email,'Confirme seu e-mail',url)}:{})},
     // Explicit production host allowlist. Never trust arbitrary Origin/Host headers.
     trustedOrigins: [
       authUrl,
+      'https://meupedido.sistemakumo.com.br',
       'https://meupedido-bruno-02a0.vercel.app',
       'https://meupedido-seven.vercel.app',
       'https://meupedido-git-main-bruno-02a0.vercel.app',
@@ -28,3 +34,6 @@ export function createAuth() {
     ],
   });
 }
+
+let cachedAuth: ReturnType<typeof buildAuth> | undefined;
+export function createAuth(){return cachedAuth ??= buildAuth();}

@@ -1,3 +1,4 @@
+import {withOrganizationAccess} from '@/lib/organization-access';
 import {headers} from 'next/headers';
 import {NextResponse} from 'next/server';
 import {createAuth} from '@/lib/auth';
@@ -5,7 +6,7 @@ import {getDb} from '@/lib/db';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-export async function GET(req:Request){
+async function handleGET(req:Request){
  try{
  const session=await createAuth().api.getSession({headers:await headers()});if(!session)return NextResponse.json({error:'unauthorized'},{status:401});
  const q=new URL(req.url).searchParams,org=q.get('organizationId'),order=q.get('orderId');
@@ -18,7 +19,7 @@ export async function GET(req:Request){
  return NextResponse.json({items:rows});
  }catch{return NextResponse.json({error:'service_unavailable'},{status:503})}
 }
-export async function POST(req:Request){
+async function handlePOST(req:Request){
  try{
  const session=await createAuth().api.getSession({headers:await headers()});if(!session)return NextResponse.json({error:'unauthorized'},{status:401});
  const b=await req.json() as Record<string,unknown>;
@@ -29,3 +30,11 @@ export async function POST(req:Request){
  return NextResponse.json({order:rows[0]},{status:201});
  }catch{return NextResponse.json({error:'order_not_editable'},{status:409})}
 }
+
+export const GET = withOrganizationAccess(handleGET);
+
+export const POST = withOrganizationAccess(handlePOST);
+
+export const DELETE=withOrganizationAccess(async(req:Request)=>{try{const session=await createAuth().api.getSession({headers:await headers()});if(!session)return NextResponse.json({error:'unauthorized'},{status:401});const b=await req.json();if(typeof b.itemId!=='string'||!uuid.test(b.itemId))return NextResponse.json({error:'invalid_item'},{status:400});const sql=getDb();await sql`SELECT restaurant_cancel_item(${b.organizationId}::uuid,${session.user.id},${b.itemId}::uuid)`;return NextResponse.json({ok:true});}catch{return NextResponse.json({error:'item_not_editable'},{status:409});}});
+
+export const PATCH=withOrganizationAccess(async(req:Request)=>{try{const session=await createAuth().api.getSession({headers:await headers()});if(!session)return NextResponse.json({error:'unauthorized'},{status:401});const b=await req.json();if(typeof b.orderId!=='string'||!uuid.test(b.orderId)||!Number.isSafeInteger(b.discountCents)||b.discountCents<0)return NextResponse.json({error:'invalid_discount'},{status:400});const sql=getDb();const rows=await sql`SELECT restaurant_set_discount(${b.organizationId}::uuid,${session.user.id},${b.orderId}::uuid,${b.discountCents}) AS total`;return NextResponse.json(rows[0]);}catch{return NextResponse.json({error:'discount_not_allowed'},{status:409});}});

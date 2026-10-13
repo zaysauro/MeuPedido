@@ -1,3 +1,4 @@
+import {withOrganizationAccess} from '@/lib/organization-access';
 import {headers} from 'next/headers';
 import {NextResponse} from 'next/server';
 import {createAuth} from '@/lib/auth';
@@ -5,7 +6,7 @@ import {getDb} from '@/lib/db';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-export async function GET(req:Request){
+async function handleGET(req:Request){
  try{
   const session=await createAuth().api.getSession({headers:await headers()});
   if(!session)return NextResponse.json({error:'unauthorized'},{status:401});
@@ -20,7 +21,7 @@ export async function GET(req:Request){
   return NextResponse.json({addresses:rows});
  }catch{return NextResponse.json({error:'service_unavailable'},{status:503})}
 }
-export async function POST(req:Request){
+async function handlePOST(req:Request){
  try{
   const session=await createAuth().api.getSession({headers:await headers()});
   if(!session)return NextResponse.json({error:'unauthorized'},{status:401});
@@ -40,3 +41,7 @@ export async function POST(req:Request){
   return NextResponse.json({address:rows[0]},{status:201});
  }catch{return NextResponse.json({error:'service_unavailable'},{status:503})}
 }
+
+export const GET = withOrganizationAccess(handleGET);
+
+export const POST = withOrganizationAccess(handlePOST);

@@ -1,3 +1,4 @@
+import {withOrganizationAccess} from '@/lib/organization-access';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { createAuth } from '@/lib/auth';
@@ -5,7 +6,7 @@ import { getDb } from '@/lib/db';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
-export async function GET(request:Request) {
+async function handleGET(request:Request) {
   try {
     const session=await createAuth().api.getSession({headers:await headers()});
     if(!session)return NextResponse.json({error:'unauthorized'},{status:401});
@@ -28,3 +29,5 @@ export async function GET(request:Request) {
     return NextResponse.json({items:rows});
   }catch{return NextResponse.json({error:'service_unavailable'},{status:503});}
 }
+
+export const GET = withOrganizationAccess(handleGET);

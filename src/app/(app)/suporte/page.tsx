@@ -1,0 +1,1 @@
+export default function Page(){return <main><span className="eyebrow">Estamos por perto</span><h1>Como podemos ajudar?</h1><section className="panel"><p>Fale com a equipe Kumo para tirar dúvidas sobre o sistema ou configurar seu estabelecimento.</p><a className="button button-primary" href="https://www.sistemakumo.com.br/#contato">Falar com a Kumo ↗</a></section></main>}

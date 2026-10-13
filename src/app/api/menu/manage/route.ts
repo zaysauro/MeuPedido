@@ -1,3 +1,4 @@
+import {withOrganizationAccess} from '@/lib/organization-access';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { createAuth } from '@/lib/auth';
@@ -6,7 +7,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const bad=(error:string,status=400)=>NextResponse.json({error},{status});
-export async function POST(req:Request) {
+async function handlePOST(req:Request) {
  try {
   const session=await createAuth().api.getSession({headers:await headers()});
   if(!session)return bad('unauthorized',401);
@@ -50,3 +51,5 @@ export async function POST(req:Request) {
   return rows.length?NextResponse.json({item:rows[0]}):bad('not_found',404);
  }catch{return bad('operation_failed',503)}
 }
+
+export const POST = withOrganizationAccess(handlePOST);

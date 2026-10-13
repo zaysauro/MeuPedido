@@ -1,0 +1,1 @@
+export default function robots(){return {rules:{userAgent:'*',allow:'/',disallow:['/api/','/painel','/pdv','/comandas','/clientes','/caixa','/estoque','/cozinha','/entregas','/configuracoes','/assinatura']},sitemap:'https://meupedido.sistemakumo.com.br/sitemap.xml'};}

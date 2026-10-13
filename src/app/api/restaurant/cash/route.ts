@@ -1,3 +1,4 @@
+import {withOrganizationAccess} from '@/lib/organization-access';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { createAuth } from '@/lib/auth';
@@ -6,7 +7,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export async function GET(req: Request) {
+async function handleGET(req: Request) {
  try {
   const session = await createAuth().api.getSession({ headers: await headers() });
   if (!session) return NextResponse.json({error:'unauthorized'},{status:401});
@@ -20,11 +21,13 @@ export async function GET(req: Request) {
     FROM restaurant_cash_sessions s WHERE s.organization_id=${org}::uuid
     AND EXISTS(SELECT 1 FROM organization_members m WHERE m.organization_id=s.organization_id AND m.user_id=${session.user.id})
     ORDER BY s.opened_at DESC LIMIT 30`;
-  return NextResponse.json({sessions});
+  const methods=await sql`SELECT cash_session_id,method,sum(amount_cents)::bigint AS amount_cents FROM restaurant_payments WHERE organization_id=${org}::uuid AND cash_session_id IS NOT NULL GROUP BY cash_session_id,method`;
+  const movements=await sql`SELECT id,session_id,kind,amount_cents,notes,created_at FROM restaurant_cash_movements WHERE organization_id=${org}::uuid ORDER BY created_at DESC LIMIT 100`;
+  return NextResponse.json({sessions,methods,movements});
  } catch {return NextResponse.json({error:'service_unavailable'},{status:503});}
 }
 
-export async function POST(req: Request) {
+async function handlePOST(req: Request) {
  try {
   const session = await createAuth().api.getSession({ headers: await headers() });
   if (!session) return NextResponse.json({error:'unauthorized'},{status:401});
@@ -51,3 +54,7 @@ export async function POST(req: Request) {
   return NextResponse.json({id:rows[0].id},{status:201});
  } catch {return NextResponse.json({error:'cash_operation_rejected'},{status:409});}
 }
+
+export const GET = withOrganizationAccess(handleGET);
+
+export const POST = withOrganizationAccess(handlePOST);

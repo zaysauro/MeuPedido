@@ -1,3 +1,4 @@
+import {withOrganizationAccess} from '@/lib/organization-access';
 import {headers} from 'next/headers';
 import {NextResponse} from 'next/server';
 import {createAuth} from '@/lib/auth';
@@ -6,7 +7,7 @@ export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const bad=(message:string,status=400)=>NextResponse.json({error:message},{status});
-export async function GET(req:Request){
+async function handleGET(req:Request){
  try{
  const session=await createAuth().api.getSession({headers:await headers()});if(!session)return bad('unauthorized',401);
  const q=new URL(req.url).searchParams,org=q.get('organizationId'),resource=q.get('resource');
@@ -22,7 +23,7 @@ export async function GET(req:Request){
  return bad('unknown_resource');
  }catch{return bad('service_unavailable',503)}
 }
-export async function POST(req:Request){
+async function handlePOST(req:Request){
  try{
  const session=await createAuth().api.getSession({headers:await headers()});if(!session)return bad('unauthorized',401);
  const b=await req.json() as Record<string,unknown>,org=b.organizationId;
@@ -56,3 +57,7 @@ export async function POST(req:Request){
  return bad('unknown_resource');
  }catch{return bad('service_unavailable',503)}
 }
+
+export const GET = withOrganizationAccess(handleGET);
+
+export const POST = withOrganizationAccess(handlePOST);

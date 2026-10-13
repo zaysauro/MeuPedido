@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { createAuth } from '@/lib/auth';
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
     const rows = await sql`
       WITH new_org AS (
         INSERT INTO organizations (name, slug)
-        VALUES (${name.trim()}, encode(gen_random_bytes(12), 'hex'))
+        VALUES (${name.trim()}, ${randomUUID()})
         RETURNING id, name, slug
       ), new_member AS (
         INSERT INTO organization_members (organization_id, user_id, role)

@@ -1,0 +1,12 @@
+ 'use client';
+import Link from 'next/link';
+import {usePathname} from 'next/navigation';
+import {useState} from 'react';
+import LogoutButton from './logout-button';
+const groups=[['Operação',[['/painel','Visão geral','◫'],['/pdv','Novo pedido','＋'],['/mesas','Mesas','▦'],['/comandas','Comandas','▤'],['/cozinha','Cozinha','◷'],['/entregas','Entregas','↗']]],['Gestão',[['/cardapio/gerenciar','Cardápio','☷'],['/estoque','Estoque','▧'],['/fichas-tecnicas','Fichas técnicas','≡'],['/clientes','Clientes','♧'],['/caixa','Caixa','▣'],['/relatorios','Relatórios','▥']]],['Sistema',[['/configuracoes','Estabelecimento','⚙'],['/assinatura','Assinatura','◇'],['/suporte','Suporte','?']]]] as const;
+export default function AppShell({children,name}:{children:React.ReactNode;name:string}){
+ const path=usePathname(),[open,setOpen]=useState(false);
+ const printing=path==='/comprovante'||path==='/cozinha/imprimir';
+ if(printing)return children;
+ return <div className="workspace"><a className="skip-link" href="#main-content">Pular para o conteúdo</a><aside className={'sidebar '+(open?'is-open':'')}><Link href="/painel" className="brand"><span className="brand-icon">m.</span>MeuPedido<span className="brand-by">por Kumo</span></Link><div className="sidebar-intro">Sua operação, em ordem.</div><nav aria-label="Navegação principal">{groups.map(([title,links])=><section key={title}><h2>{title}</h2>{links.map(([url,label,icon])=><Link onClick={()=>setOpen(false)} key={url} href={url} className={path===url?'selected':''} aria-current={path===url?'page':undefined}><span aria-hidden="true">{icon}</span>{label}</Link>)}</section>)}</nav><div className="sidebar-bottom"><span className="avatar">{name.slice(0,1).toUpperCase()}</span><div><strong>{name}</strong><small>Meu estabelecimento</small></div><LogoutButton/></div></aside>{open&&<button className="nav-backdrop" aria-label="Fechar navegação" onClick={()=>setOpen(false)}/>}<div className="workspace-content"><header className="workspace-header"><button className="menu-toggle" aria-label="Abrir navegação" aria-expanded={open} onClick={()=>setOpen(!open)}>☰</button><span>MeuPedido <span className="muted">/ Seu restaurante</span></span><Link className="header-action" href="/pdv">＋ Novo pedido</Link></header><div id="main-content" className="app-page">{children}</div><footer className="app-footer">MeuPedido · Kumo <span>Feito para a rotina do seu negócio.</span></footer></div></div>;
+}
