@@ -12,6 +12,7 @@ export default function Comandas(){
  const paymentKey=useRef('');
  const {data:session,isPending}=authClient.useSession();
  const [orgs,setOrgs]=useState<Org[]>([]),[org,setOrg]=useState(''),[orders,setOrders]=useState<Order[]>([]),[selected,setSelected]=useState(''),[detail,setDetail]=useState<Detail|null>(null);
+ useEffect(()=>{paymentKey.current='';},[org,selected]);
  const [products,setProducts]=useState<MenuProduct[]>([]),[newProduct,setNewProduct]=useState(''),[newQuantity,setNewQuantity]=useState(1),[newNotes,setNewNotes]=useState('');
  const [method,setMethod]=useState('pix'),[amount,setAmount]=useState(''),[target,setTarget]=useState(''),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
  useEffect(()=>{if(!session)return;fetch('/api/organizations').then(r=>r.json()).then(d=>{setOrgs(d.organizations||[]);setOrg(d.organizations?.find((o:Org)=>o.id===new URLSearchParams(window.location.search).get('organizationId'))?.id||d.organizations?.[0]?.id||'')}).catch(()=>setMessage('Falha ao carregar estabelecimentos'))},[session]);
