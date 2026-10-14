@@ -32,7 +32,8 @@ async function handleGET(req:Request){
    WHERE i.organization_id=${org}::uuid AND i.status<>'cancelado' AND o.status<>'cancelado'
    AND o.created_at>=(${start}::date::timestamp AT TIME ZONE 'America/Sao_Paulo') AND o.created_at<((${end}::date+interval '1 day') AT TIME ZONE 'America/Sao_Paulo')
    GROUP BY i.name_snapshot ORDER BY units DESC LIMIT 20`;
-  return NextResponse.json({sales:sales[0],methods,products});
+  const canceled=await sql`SELECT count(*)::integer AS count FROM restaurant_orders WHERE organization_id=${org}::uuid AND status='cancelado' AND created_at>=(${start}::date::timestamp AT TIME ZONE 'America/Sao_Paulo') AND created_at<((${end}::date+interval '1 day') AT TIME ZONE 'America/Sao_Paulo')`;
+  return NextResponse.json({sales:{...sales[0],canceled_orders:canceled[0].count},methods,products});
  }catch{return NextResponse.json({error:'service_unavailable'},{status:503})}
 }
 

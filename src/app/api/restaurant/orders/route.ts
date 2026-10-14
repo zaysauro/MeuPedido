@@ -30,3 +30,7 @@ async function handlePOST(req:Request){
 }
 
 export const POST = withOrganizationAccess(handlePOST);
+
+export const PATCH=withOrganizationAccess(async(req:Request)=>{
+ try{const session=await createAuth().api.getSession({headers:await headers()});if(!session)return err('unauthorized',401);const b=await req.json();if(typeof b.orderId!=='string'||!uuid.test(b.orderId)||b.action!=='close')return err('invalid_fields');const sql=getDb();await sql`SELECT restaurant_close_order(${b.organizationId}::uuid,${session.user.id},${b.orderId}::uuid)`;return NextResponse.json({closed:true});}catch{return err('A comanda deve estar entregue e sem saldo pendente.',409);}
+});

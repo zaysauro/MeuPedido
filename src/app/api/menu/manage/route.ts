@@ -5,7 +5,7 @@ import { createAuth } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const bad=(error:string,status=400)=>NextResponse.json({error},{status});
 async function handlePOST(req:Request) {
  try {

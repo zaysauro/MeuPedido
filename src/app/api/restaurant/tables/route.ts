@@ -14,10 +14,10 @@ async function handleGET(req:Request){
   if(!org||!uuid.test(org))return NextResponse.json({error:'invalid_organization'},{status:400});
   const sql=getDb();
   const rows=await sql`SELECT t.id,t.label,t.active,
-   COALESCE(jsonb_agg(jsonb_build_object('id',o.id,'order_number',o.order_number,'status',o.status,'payment_status',o.payment_status,'total_cents',o.total_cents) ORDER BY o.created_at DESC) FILTER (WHERE o.id IS NOT NULL),'[]'::jsonb) AS orders
+   COALESCE(jsonb_agg(jsonb_build_object('id',o.id,'order_number',o.order_number,'status',o.status,'payment_status',o.payment_status,'total_cents',o.total_cents,'created_at',o.created_at) ORDER BY o.created_at DESC) FILTER (WHERE o.id IS NOT NULL),'[]'::jsonb) AS orders
    FROM restaurant_tables t
-   LEFT JOIN restaurant_orders o ON o.table_id=t.id AND o.organization_id=t.organization_id
-    AND o.status NOT IN ('entregue','cancelado') AND o.payment_status<>'pago'
+   LEFT JOIN restaurant_open_orders o ON o.table_id=t.id AND o.organization_id=t.organization_id
+
    WHERE t.organization_id=${org}::uuid AND EXISTS
     (SELECT 1 FROM organization_members m WHERE m.organization_id=t.organization_id AND m.user_id=${session.user.id})
    GROUP BY t.id,t.label,t.active ORDER BY t.label`;

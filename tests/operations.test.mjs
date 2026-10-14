@@ -58,6 +58,15 @@ test('migrações e operação real PostgreSQL: isolamento, estoque, caixa e del
  await db.query("SELECT restaurant_cancel_item($1,'a',$2)",[a,item]);
  await rejects("SELECT restaurant_transfer_order_item($1,'a',$2,$3)",[a,item,once],/invalid_transfer/);
  assert.equal(Number((await one('SELECT total_cents FROM restaurant_orders WHERE id=$1',[editable])).total_cents),0);
+ const table=(await one("INSERT INTO restaurant_tables(organization_id,label) VALUES($1,'Mesa integração') RETURNING id",[a])).id;
+ const tableOrder=(await one("SELECT restaurant_create_order($1,'a','mesa',$2,NULL,'',$3) AS id",[a,table,lines])).id;
+ await db.query("SELECT restaurant_record_payment($1,'a',$2,'pix',5000)",[a,tableOrder]);
+ assert.equal(Number((await one('SELECT count(*) AS count FROM restaurant_open_orders WHERE table_id=$1',[table])).count),1,'pagamento antecipado não libera mesa');
+ await rejects("SELECT restaurant_close_order($1,'a',$2)",[a,tableOrder],/fulfillment_pending/);
+ for(const status of ['preparando','pronto','entregue'])await db.query("SELECT restaurant_kitchen_transition($1,'a',$2,$3)",[a,tableOrder,status]);
+ assert.equal(Number((await one('SELECT count(*) AS count FROM restaurant_open_orders WHERE table_id=$1',[table])).count),0,'mesa liberada após pagamento e entrega');
+ await db.query("SELECT restaurant_close_order($1,'a',$2)",[a,tableOrder]);
+ await db.query("SELECT restaurant_close_order($1,'a',$2)",[a,tableOrder]);
  const customer=(await one("INSERT INTO restaurant_customers(organization_id,name) VALUES($1,'Cliente teste') RETURNING id",[a])).id;
  const address=(await one("INSERT INTO restaurant_customer_addresses(organization_id,customer_id,street,number,neighborhood,city,state,postal_code) VALUES($1,$2,'Rua teste','1','Centro','Curitiba','PR','80000000') RETURNING id",[a,customer])).id;
  const delivery=(await one("SELECT restaurant_create_delivery_order($1,'a',$2,$3,500,'',$4) AS id",[a,customer,address,lines])).id;
@@ -66,6 +75,7 @@ test('migrações e operação real PostgreSQL: isolamento, estoque, caixa e del
  await db.query("SELECT restaurant_kitchen_transition($1,'a',$2,'preparando')",[a,delivery]);
  await db.query("SELECT restaurant_kitchen_transition($1,'a',$2,'pronto')",[a,delivery]);
  for(const status of ['despachado','em_rota','falhou','despachado','em_rota','entregue'])await db.query("SELECT restaurant_update_delivery($1,'a',$2,$3,$4,$5)",[a,delivery,status,status==='despachado'?'José':null,status==='despachado'?'41999999999':null]);
+ assert.equal((await one('SELECT status FROM restaurant_orders WHERE id=$1',[delivery])).status,'entregue','delivery conclui pedido');
  assert.equal((await one('SELECT driver_name FROM restaurant_delivery_tracking WHERE order_id=$1',[delivery])).driver_name,'José');
  await rejects("SELECT restaurant_adjust_ingredient($1,'a',$2,'ajuste_negativo',100,'')",[a,ingredient.id],/insufficient_stock/);
  await rejects("SELECT restaurant_adjust_ingredient($1,'b',$2,'entrada',1,'')",[a,ingredient.id],/forbidden/);

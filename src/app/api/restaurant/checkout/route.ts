@@ -20,6 +20,7 @@ async function handlePOST(req:Request){
    const v=item as Record<string,unknown>;
    if(typeof v.menuItemId!=='string'||!uuid.test(v.menuItemId)||!Number.isInteger(v.quantity)||Number(v.quantity)<1||Number(v.quantity)>99||typeof v.notes!=='string'||v.notes.length>500||!Array.isArray(v.addons)||v.addons.length>20||v.addons.some(x=>typeof x!=='string'||!uuid.test(x))||new Set(v.addons).size!==v.addons.length)return NextResponse.json({error:'invalid_item'},{status:400});
   }
+  if(b.discountCents!=null&&(!Number.isSafeInteger(b.discountCents)||Number(b.discountCents)<0||Number(b.discountCents)>1000000000))return NextResponse.json({error:'invalid_discount'},{status:400});
   const sql=getDb();
   const delivery=b.channel==='delivery';
   if(delivery){

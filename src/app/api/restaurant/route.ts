@@ -19,7 +19,7 @@ async function handleGET(req:Request){
  if(resource==='customers')return NextResponse.json({items:await sql`SELECT id,name,phone,notes FROM restaurant_customers WHERE organization_id=${org}::uuid ORDER BY name LIMIT 500`});
  if(resource==='ingredients')return NextResponse.json({items:await sql`SELECT id,name,unit,quantity,minimum_quantity FROM restaurant_ingredients WHERE organization_id=${org}::uuid ORDER BY name`});
  if(resource==='categories')return NextResponse.json({items:await sql`SELECT id,name,sort_order FROM restaurant_categories WHERE organization_id=${org}::uuid ORDER BY sort_order,name`});
- if(resource==='orders')return NextResponse.json({items:await sql`SELECT o.id,o.order_number,o.channel,o.status,o.payment_status,o.total_cents,o.created_at,t.label AS table_label FROM restaurant_orders o LEFT JOIN restaurant_tables t ON t.id=o.table_id AND t.organization_id=o.organization_id WHERE o.organization_id=${org}::uuid ORDER BY o.created_at DESC LIMIT 150`});
+ if(resource==='orders')return NextResponse.json({items:await sql`SELECT o.table_id,o.completed_at AS closed_at,o.id,o.order_number,o.channel,o.status,o.payment_status,o.total_cents,o.created_at,t.label AS table_label FROM restaurant_orders o LEFT JOIN restaurant_tables t ON t.id=o.table_id AND t.organization_id=o.organization_id WHERE o.organization_id=${org}::uuid ORDER BY o.created_at DESC LIMIT 150`});
  return bad('unknown_resource');
  }catch{return bad('service_unavailable',503)}
 }
