@@ -1,4 +1,7 @@
 'use client';
+import {PageHeader} from '@/components/ui';
+import {useOrganization} from '@/components/organization-provider';
+import {apiFetch} from '@/lib/api-client';
 import {useEffect,useState,type FormEvent} from 'react';
 import {authClient} from '@/lib/auth-client';
 type Org={id:string;name:string};
@@ -6,22 +9,23 @@ type Row={id:string;name?:string;label?:string;unit?:string;quantity?:number;min
 type Resource='tables'|'categories'|'ingredients'|'customers'|'orders';
 const labels:Record<Resource,string>={tables:'Mesas',categories:'Categorias',ingredients:'Ingredientes',customers:'Clientes',orders:'Pedidos'};
 export default function Operacao(){
+ const {organizations:orgs,organizationId:org,revision}=useOrganization();
  const {data:session,isPending}=authClient.useSession();
- const [orgs,setOrgs]=useState<Org[]>([]),[org,setOrg]=useState(''),[resource,setResource]=useState<Resource>('tables');
+ const [resource,setResource]=useState<Resource>(()=>{const r=typeof window!=='undefined'?new URLSearchParams(window.location.search).get('resource'):null;return ['tables','categories','ingredients','customers','orders'].includes(r||'')?r as Resource:'tables';});
  const [rows,setRows]=useState<Row[]>([]),[name,setName]=useState(''),[unit,setUnit]=useState('un'),[quantity,setQuantity]=useState('0'),[minimum,setMinimum]=useState('0'),[phone,setPhone]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
- useEffect(()=>{if(!session)return;fetch('/api/organizations').then(r=>r.json()).then(d=>{setOrgs(d.organizations||[]);setOrg((v:string)=>v||d.organizations?.[0]?.id||'');}).catch(()=>setError('Não foi possível carregar estabelecimentos.'));},[session]);
- useEffect(()=>{if(!org)return;let active=true;setError('');fetch('/api/restaurant?organizationId='+encodeURIComponent(org)+'&resource='+resource).then(async r=>{if(!r.ok)throw Error();return r.json()}).then(d=>{if(active)setRows(d.items||[])}).catch(()=>{if(active)setError('Não foi possível carregar. Atualize a página ou fale com o suporte.')});return()=>{active=false}},[org,resource]);
+
+ useEffect(()=>{if(!org)return;let active=true;setError('');apiFetch('/api/restaurant?organizationId='+encodeURIComponent(org)+'&resource='+resource).then(async r=>{if(!r.ok)throw Error();return r.json()}).then(d=>{if(active)setRows(d.items||[])}).catch(()=>{if(active)setError('Não foi possível carregar. Atualize a página ou fale com o suporte.')});return()=>{active=false}},[org,resource,revision]);
  async function submit(e:FormEvent){e.preventDefault();if(!org)return;setBusy(true);setError('');try{
  const payload={resource,organizationId:org,name,unit,quantity:Number(quantity.replace(',','.')),minimumQuantity:Number(minimum.replace(',','.')),phone};
- const r=await fetch('/api/restaurant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+ const r=await apiFetch('/api/restaurant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
  if(!r.ok)throw Error((await r.json()).error||'Erro ao salvar');
- setName('');setPhone('');const list=await fetch('/api/restaurant?organizationId='+encodeURIComponent(org)+'&resource='+resource);if(!list.ok)throw Error('Falha ao atualizar');setRows((await list.json()).items||[]);
+ setName('');setPhone('');const list=await apiFetch('/api/restaurant?organizationId='+encodeURIComponent(org)+'&resource='+resource);if(!list.ok)throw Error('Falha ao atualizar');setRows((await list.json()).items||[]);
  }catch(e){setError(e instanceof Error?e.message:'Erro ao salvar')}finally{setBusy(false)}}
  if(isPending)return <main style={{padding:32}}>Carregando...</main>;
  if(!session)return <main style={{padding:32}}><a href="/login">Entrar</a></main>;
  return <main style={{maxWidth:1100,margin:'32px auto',padding:24,color:'#16392c'}}>
- <a href="/painel">← Painel</a><h1>Operação do restaurante</h1><p>Gerencie mesas, ingredientes, categorias, clientes e acompanhe pedidos.</p>
- <label>Estabelecimento <select value={org} onChange={e=>setOrg(e.target.value)}>{orgs.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select></label>
+ <a href="/painel">← Painel</a><PageHeader title="Cadastros da operação" description="Organize mesas, categorias e ingredientes do estabelecimento ativo."/><p>Gerencie mesas, ingredientes, categorias, clientes e acompanhe pedidos.</p>
+
  <nav aria-label="Módulos" style={{display:'flex',flexWrap:'wrap',gap:8,margin:'22px 0'}}>{(Object.keys(labels) as Resource[]).map(k=><button key={k} onClick={()=>setResource(k)} style={{padding:'10px 16px',borderRadius:9,border:'1px solid #bed6c8',background:resource===k?'#17663c':'white',color:resource===k?'white':'#16392c',cursor:'pointer'}}>{labels[k]}</button>)}</nav>
  {resource!=='orders'&&org&&<form onSubmit={submit} style={{padding:20,border:'1px solid #d7e5dc',borderRadius:12,display:'flex',flexWrap:'wrap',gap:12,alignItems:'end'}}>
  <label>Nome {resource==='tables'?'da mesa':''}<input required maxLength={160} value={name} onChange={e=>setName(e.target.value)} style={{display:'block',padding:10}}/></label>

@@ -1,19 +1,22 @@
 'use client';
+import {useOrganization} from '@/components/organization-provider';
+import {apiFetch} from '@/lib/api-client';
 import {useEffect,useState} from 'react';
 import {authClient} from '@/lib/auth-client';
 type Org={id:string;name:string};
 type Detail={payments:{id:string;method:string;amount_cents:number}[];order:{order_number:number;channel:string;discount_cents:number;total_cents:number;paid_cents:number;created_at:string;status:string;delivery_fee_cents:number;delivery_street:string|null;delivery_number:string|null;delivery_neighborhood:string|null;delivery_city:string|null};items:{status:string;id:string;name_snapshot:string;quantity:number;unit_price_cents:number;addons_cents:number;notes:string|null}[]};
 const money=(v:number)=>((Number(v)||0)/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 export default function Comprovante(){
+ const {organizations:orgs,organizationId:org,revision}=useOrganization();
  const [paper,setPaper]=useState('80');
  const {data:session,isPending}=authClient.useSession();
- const [orgs,setOrgs]=useState<Org[]>([]),[org,setOrg]=useState(''),[order,setOrder]=useState(''),[detail,setDetail]=useState<Detail|null>(null),[message,setMessage]=useState('');
- useEffect(()=>{const q=new URLSearchParams(window.location.search);setOrder(q.get('orderId')||'');if(session)fetch('/api/organizations').then(r=>r.json()).then(d=>{setOrgs(d.organizations||[]);setOrg(d.organizations?.find((o:Org)=>o.id===q.get('organizationId'))?.id||d.organizations?.[0]?.id||'')}).catch(()=>setMessage('Erro ao carregar estabelecimento'))},[session]);
- useEffect(()=>{if(!org||!order)return;fetch('/api/restaurant/order-detail?organizationId='+encodeURIComponent(org)+'&orderId='+encodeURIComponent(order),{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).then(setDetail).catch(()=>setMessage('Nao foi possivel carregar o pedido'))},[org,order]);
+ const [order,setOrder]=useState(''),[detail,setDetail]=useState<Detail|null>(null),[message,setMessage]=useState('');
+ useEffect(()=>{setOrder(new URLSearchParams(window.location.search).get('orderId')||'');},[]);
+ useEffect(()=>{if(!org||!order)return;apiFetch('/api/restaurant/order-detail?organizationId='+encodeURIComponent(org)+'&orderId='+encodeURIComponent(order),{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).then(setDetail).catch(()=>setMessage('Nao foi possivel carregar o pedido'))},[org,order]);
  if(isPending)return <main>Carregando...</main>;
  if(!session)return <main><a href="/login">Entrar</a></main>;
  return <main className="thermal-ticket" style={{maxWidth:420,margin:'auto',padding:20,color:'#111',fontFamily:'monospace'}}>
- <div className="no-print"><a href="/comandas">Voltar</a><label> Estabelecimento <select value={org} onChange={e=>setOrg(e.target.value)}>{orgs.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select></label><label>Papel<select value={paper} onChange={e=>setPaper(e.target.value)}><option value="58">58 mm</option><option value="80">80 mm</option></select></label><button onClick={()=>window.print()} disabled={!detail}>Imprimir</button></div>
+ <div className="no-print"><a href="/comandas">Voltar</a><label>Papel<select value={paper} onChange={e=>setPaper(e.target.value)}><option value="58">58 mm</option><option value="80">80 mm</option></select></label><button onClick={()=>window.print()} disabled={!detail}>Imprimir</button></div>
  {detail&&<article><h1 style={{textAlign:'center'}}>{orgs.find(o=>o.id===org)?.name||'MeuPedido'}</h1><p style={{textAlign:'center'}}>Comprovante de pedido — nao fiscal</p><hr/><p>Pedido #{detail.order.order_number}</p><p>{new Date(detail.order.created_at).toLocaleString('pt-BR')}</p><p>Tipo: {detail.order.channel}</p><hr/>
  {detail.items.filter(i=>i.status!=='cancelado').map(i=><div key={i.id}><p>{i.quantity} x {i.name_snapshot} — {money((i.unit_price_cents+i.addons_cents)*i.quantity)}</p>{i.notes&&<small>{i.notes}</small>}</div>)}
  {detail.order.delivery_street&&<p>Entrega: {detail.order.delivery_street}, {detail.order.delivery_number} - {detail.order.delivery_neighborhood}, {detail.order.delivery_city}</p>}{detail.order.delivery_fee_cents>0&&<p>Taxa de entrega: {money(detail.order.delivery_fee_cents)}</p>}<hr/>{detail.order.discount_cents>0&&<p>Desconto: {money(detail.order.discount_cents)}</p>}{detail.payments?.map(p=><p key={p.id}>{p.method}: {money(p.amount_cents)}</p>)}<h2>Total: {money(detail.order.total_cents)}</h2><p>Pago: {money(detail.order.paid_cents)}</p><p>Saldo: {money(Math.max(0,detail.order.total_cents-Number(detail.order.paid_cents)))}</p><p style={{textAlign:'center'}}>Obrigado pela preferencia!</p></article>}

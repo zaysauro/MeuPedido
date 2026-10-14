@@ -1,14 +1,17 @@
 'use client';
+import {useOrganization} from '@/components/organization-provider';
+import {apiFetch} from '@/lib/api-client';
 import {useEffect,useState} from 'react';
 import {authClient} from '@/lib/auth-client';
 type Org={id:string;name:string};
 type Order={id:string;order_number:number;channel:string;status:string;notes:string|null;table_label:string|null;created_at:string;items:{name:string;quantity:number;notes:string|null;addons:string[]}[]};
 export default function ImprimirCozinha(){
+ const {organizations:orgs,organizationId:org,revision}=useOrganization();
  const [paper,setPaper]=useState('80');
  const {data:session,isPending}=authClient.useSession();
- const [orgs,setOrgs]=useState<Org[]>([]),[org,setOrg]=useState(''),[orderId,setOrderId]=useState(''),[order,setOrder]=useState<Order|null>(null),[error,setError]=useState('');
- useEffect(()=>{const q=new URLSearchParams(window.location.search);setOrderId(q.get('orderId')||'');if(!session)return;fetch('/api/organizations').then(r=>r.json()).then(d=>{setOrgs(d.organizations||[]);setOrg(d.organizations?.find((o:Org)=>o.id===q.get('organizationId'))?.id||d.organizations?.[0]?.id||'')}).catch(()=>setError('Erro ao carregar estabelecimento'))},[session]);
- useEffect(()=>{if(!org||!orderId)return;fetch('/api/restaurant/kitchen?organizationId='+encodeURIComponent(org),{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).then(d=>{const found=(d.orders||[]).find((o:Order)=>o.id===orderId);if(found)setOrder(found);else setError('Pedido nao encontrado entre os pedidos ativos')}).catch(()=>setError('Nao foi possivel carregar pedido'))},[org,orderId]);
+ const [orderId,setOrderId]=useState(''),[order,setOrder]=useState<Order|null>(null),[error,setError]=useState('');
+ useEffect(()=>{setOrderId(new URLSearchParams(window.location.search).get('orderId')||'');},[]);
+ useEffect(()=>{if(!org||!orderId)return;apiFetch('/api/restaurant/kitchen?organizationId='+encodeURIComponent(org),{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).then(d=>{const found=(d.orders||[]).find((o:Order)=>o.id===orderId);if(found)setOrder(found);else setError('Pedido nao encontrado entre os pedidos ativos')}).catch(()=>setError('Nao foi possivel carregar pedido'))},[org,orderId]);
  if(isPending)return <main>Carregando...</main>;
  if(!session)return <main><a href="/login">Entrar</a></main>;
  return <main className="thermal-ticket" style={{maxWidth:360,margin:'auto',padding:18,fontFamily:'monospace',color:'#111'}}>

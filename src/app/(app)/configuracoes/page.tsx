@@ -1,30 +1,8 @@
 'use client';
-import { useEffect, useState, type FormEvent } from 'react';
-import { authClient } from '@/lib/auth-client';
-import LogoutButton from '@/components/logout-button';
-type Org = {id:string;name:string;slug:string;role:string};
-export default function OrganizationSetup() {
-  const {data:session,isPending}=authClient.useSession();
-  const [organizations,setOrganizations]=useState<Org[]>([]);
-  const [name,setName]=useState('');
-  const [busy,setBusy]=useState(false);
-  const [error,setError]=useState('');
-  useEffect(()=>{if(session)fetch('/api/organizations').then(r=>r.ok?r.json():Promise.reject()).then(d=>setOrganizations(d.organizations)).catch(()=>setError('Não foi possível carregar seus estabelecimentos.'));},[session]);
-  async function submit(e:FormEvent) {
-    e.preventDefault();setBusy(true);setError('');
-    try {const r=await fetch('/api/organizations/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});if(!r.ok)throw Error();const d=await r.json();setOrganizations(a=>[...a,{...d.organization,role:'owner'}]);setName('');}
-    catch {setError('Não foi possível cadastrar o estabelecimento.');}
-    finally {setBusy(false);}
-  }
-  if(isPending)return <main style={{padding:32}}>Carregando...</main>;
-  if(!session)return <main style={{padding:32}}><h1>MeuPedido</h1><a href="/login">Entre para continuar</a></main>;
-  return <main style={{maxWidth:720,margin:'8vh auto',padding:24}}>
-    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:16}}><h1>Olá, {session.user.name}</h1><LogoutButton /></div><h2>Seus estabelecimentos</h2>
-    {organizations.length===0?<p>Cadastre seu primeiro estabelecimento.</p>:<ul>{organizations.map(o=><li key={o.id}>{o.name} — {o.role}</li>)}</ul>}
-    <form onSubmit={submit} style={{display:'grid',gap:12,maxWidth:420}}>
-      <label>Nome do estabelecimento<input value={name} onChange={e=>setName(e.target.value)} minLength={2} maxLength={160} required style={{display:'block',width:'100%',padding:10}} /></label>
-      <button disabled={busy} type="submit" style={{padding:12,background:'#17663c',color:'white',border:0,borderRadius:8}}>{busy?'Salvando...':'Cadastrar estabelecimento'}</button>
-    </form>{error&&<p role="alert">{error}</p>}
-    <p>Pedidos, mesas e cozinha estão em desenvolvimento e dependem das migrações 004 a 021 no Neon.</p>
-  </main>;
+import {useState,type FormEvent} from 'react';
+import {useOrganization} from '@/components/organization-provider';
+import {PageHeader,Panel,Notice} from '@/components/ui';
+import {apiFetch} from '@/lib/api-client';
+export default function OrganizationSetup(){const {organizations,organizationId,setOrganizationId,refreshOrganizations}=useOrganization();const [name,setName]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');async function submit(e:FormEvent){e.preventDefault();setBusy(true);setError('');try{const r=await apiFetch('/api/organizations/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});if(!r.ok)throw Error();const d=await r.json();await refreshOrganizations(d.organization.id);setName('');}catch{setError('Não foi possível cadastrar o estabelecimento.');}finally{setBusy(false);}}
+return <main><PageHeader title="Estabelecimentos" description="Cada estabelecimento tem seus próprios pedidos, cardápio, estoque e caixa."/><div className="settings-grid"><Panel title="Seus estabelecimentos">{organizations.map(o=><article className="organization-card" key={o.id}><div><strong>{o.name}</strong><small>{o.role==='owner'?'Proprietário':o.role==='admin'?'Administrador':'Equipe'}</small></div><button disabled={o.id===organizationId} onClick={()=>setOrganizationId(o.id)}>{o.id===organizationId?'Em uso':'Selecionar'}</button></article>)}{!organizations.length&&<p>Cadastre seu primeiro estabelecimento para iniciar a operação.</p>}</Panel><Panel title="Novo estabelecimento"><form className="form-stack" onSubmit={submit}><label>Nome do estabelecimento<input required minLength={2} maxLength={160} value={name} onChange={e=>setName(e.target.value)}/></label><button className="button-primary" disabled={busy}>{busy?'Salvando…':'Cadastrar estabelecimento'}</button></form>{error&&<Notice error>{error}</Notice>}</Panel></div></main>;
 }

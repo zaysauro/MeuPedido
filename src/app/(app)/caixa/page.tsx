@@ -1,4 +1,8 @@
 'use client';
+import {PageHeader} from '@/components/ui';
+import {useInteraction} from '@/components/ui';
+import {useOrganization} from '@/components/organization-provider';
+import {apiFetch} from '@/lib/api-client';
 import { useEffect, useState, type FormEvent } from 'react';
 import {parseBRL} from '@/lib/money';
 import { authClient } from '@/lib/auth-client';
@@ -6,21 +10,23 @@ type Org = {id:string;name:string};
 type Session = {id:string;opened_at:string;closed_at:string|null;opening_cents:number;counted_cents:number|null;net_movements_cents:number;cash_sales_cents:number};
 const money=(n:number)=>((n||0)/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 export default function Caixa() {
+ const {confirmAction,promptAction}=useInteraction();
+ const {organizations:orgs,organizationId:org,revision}=useOrganization();
  const [methods,setMethods]=useState<{cash_session_id:string;method:string;amount_cents:string}[]>([]),[movements,setMovements]=useState<{id:string;kind:string;amount_cents:number;notes:string;created_at:string}[]>([]);
  const {data:session,isPending}=authClient.useSession();
- const [orgs,setOrgs]=useState<Org[]>([]),[org,setOrg]=useState('');
+
  const [sessions,setSessions]=useState<Session[]>([]),[action,setAction]=useState('open'),[kind,setKind]=useState('suprimento');
  const [amount,setAmount]=useState(''),[notes,setNotes]=useState(''),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
  const active=sessions.find(s=>!s.closed_at);
- useEffect(()=>{if(!session)return;fetch('/api/organizations').then(r=>r.json()).then(d=>{setOrgs(d.organizations||[]);setOrg(d.organizations?.find((o:Org)=>o.id===new URLSearchParams(window.location.search).get('organizationId'))?.id||d.organizations?.[0]?.id||'')}).catch(()=>setMessage('Falha ao carregar estabelecimentos.'))},[session]);
- async function refresh(){if(!org)return;try{const r=await fetch('/api/restaurant/cash?organizationId='+encodeURIComponent(org),{cache:'no-store'});if(!r.ok)throw Error();const d=await r.json();setSessions(d.sessions||[]);setMethods(d.methods||[]);setMovements(d.movements||[])}catch{setMessage('Não foi possível consultar o caixa. Tente atualizar a página ou fale com o suporte.')}}
- useEffect(()=>{setSessions([]);setAction('open');void refresh()},[org]);
- async function submit(e:FormEvent){e.preventDefault();const cents=parseBRL(amount);if(cents===null){setMessage('Valor inválido.');return}if(action==='close'&&!confirm('Confirmar fechamento do caixa com o valor contado?'))return;setBusy(true);setMessage('');
- try{const r=await fetch('/api/restaurant/cash',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({organizationId:org,sessionId:active?.id,action:active?(action==='close'?'close':'move'):'open',kind,amountCents:cents,notes})});if(!r.ok)throw Error();setAmount('');setNotes('');setMessage('Operação registrada.');await refresh()}catch{setMessage('Operação recusada. Verifique o estado do caixa e suas permissões.')}finally{setBusy(false)}}
+
+ async function refresh(){if(!org)return;try{const r=await apiFetch('/api/restaurant/cash?organizationId='+encodeURIComponent(org),{cache:'no-store'});if(!r.ok)throw Error();const d=await r.json();setSessions(d.sessions||[]);setMethods(d.methods||[]);setMovements(d.movements||[])}catch{setMessage('Não foi possível consultar o caixa. Tente atualizar a página ou fale com o suporte.')}}
+ useEffect(()=>{void refresh()},[org,revision]);
+ async function submit(e:FormEvent){e.preventDefault();const cents=parseBRL(amount);if(cents===null){setMessage('Valor inválido.');return}if(action==='close'&&!await confirmAction('Confirmar fechamento do caixa com o valor contado?'))return;setBusy(true);setMessage('');
+ try{const r=await apiFetch('/api/restaurant/cash',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({organizationId:org,sessionId:active?.id,action:active?(action==='close'?'close':'move'):'open',kind,amountCents:cents,notes})});if(!r.ok)throw Error();setAmount('');setNotes('');setMessage('Operação registrada.');await refresh()}catch{setMessage('Operação recusada. Verifique o estado do caixa e suas permissões.')}finally{setBusy(false)}}
  if(isPending)return <main style={{padding:24}}>Carregando...</main>;
  if(!session)return <main style={{padding:24}}><a href="/login">Entrar</a></main>;
- return <main style={{maxWidth:960,margin:'30px auto',padding:24,color:'#173d2d'}}><a href="/painel">← Painel</a><h1>Controle de caixa</h1>
- <label>Estabelecimento <select value={org} onChange={e=>setOrg(e.target.value)}>{orgs.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select></label>
+ return <main style={{maxWidth:960,margin:'30px auto',padding:24,color:'#173d2d'}}><a href="/painel">← Painel</a><PageHeader title="Caixa" description="Abertura, recebimentos, movimentações e conferência do turno."/>
+
  <section style={{marginTop:24,padding:20,border:'1px solid #c9ded2',borderRadius:12}}>
  <h2>{active?'Caixa aberto':'Caixa fechado'}</h2>
  {active&&<><p>Aberto em {new Date(active.opened_at).toLocaleString('pt-BR')}</p><p>Fundo inicial: {money(active.opening_cents)}</p><p>Suprimentos e sangrias (líquido): {money(Number(active.net_movements_cents))}</p><p>Vendas em dinheiro: {money(Number(active.cash_sales_cents))}</p><p>Esperado no caixa: {money(Number(active.opening_cents)+Number(active.net_movements_cents)+Number(active.cash_sales_cents))}</p></>}
