@@ -6,4 +6,5 @@ node_modules/
 *.tsbuildinfo
 
 .validation-user.json
+.onboarding-user.json
 .vercel/

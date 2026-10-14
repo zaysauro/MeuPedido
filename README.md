@@ -4,7 +4,7 @@ PDV e gestão de restaurantes da Kumo. Aplicação existente em Next.js 15, Reac
 
 ## Operação integrada
 
-- O estabelecimento ativo pertence ao contexto da aplicação, é validado contra as organizações do usuário e persiste entre páginas. A troca desmonta formulários, carrinhos e consultas da organização anterior. Todas as APIs validam associação e papel no servidor.
+- Regra comercial: um proprietário, um estabelecimento e uma assinatura. O onboarding cria o único estabelecimento de forma atômica; a interface não oferece criação adicional ou alternância. O servidor resolve o estabelecimento autorizado, ignorando preferências antigas e parâmetros de seleção. Todas as APIs operacionais conferem esse vínculo e as permissões.
 - PDV → pedidos/comandas → cozinha → consumo de ingredientes → pagamentos → caixa → relatórios. Checkout e pagamentos usam chaves de idempotência; o consumo da ficha técnica é transacional e ocorre uma vez no início do preparo.
 - Mesas usam a visão `restaurant_open_orders`. Uma mesa continua ocupada enquanto existir pedido não cancelado sem entrega e quitação completas. Pedidos já em preparo recebem novos itens por uma nova rodada na mesma mesa. Itens de pedidos ainda recebidos podem ser adicionados ou transferidos pelas comandas.
 - `completed_at` representa conclusão operacional. O antigo `closed_at` financeiro é preservado. Pagamento antecipado não conclui o preparo nem libera a mesa. O fechamento explícito exige quitação e conclusão do atendimento.
@@ -51,8 +51,27 @@ SQL/PGlite e PostgreSQL real: autorização, isolamento, transações, baixa de 
 
 HTTP/Better Auth: cadastro/login/logout/sessão, proteção de páginas e APIs, origem, IDs/entradas inválidas, gerenciador de produtos, receita, pedido, cozinha, pagamentos, caixa, mesa com novas rodadas, entrega e reconciliação de dashboard/relatórios.
 
-Interface: seletor global, persistência e limpeza ao trocar organização, navegação recolhida, drawer, formulários/modais e layouts desktop/tablet/smartphone. O deploy não substitui homologação do restaurante.
+Interface: estabelecimento automático, onboarding único, edição do estabelecimento, ausência de seletores, navegação recolhida, drawer, formulários/modais e layouts desktop/tablet/smartphone. O deploy não substitui homologação do restaurante.
 
 ## Homologação do proprietário
 
 Validar uma jornada completa com operação real controlada, permissões dos funcionários, concorrência entre dispositivos, fechamento de turno, impressão física de 58/80 mm e envio efetivo de recuperação de senha. Revisar os dados comerciais e o cardápio real antes de uso diário. A assinatura é informativa; nenhuma cobrança Asaas é ativada nesta versão.
+
+
+## Um proprietário, um estabelecimento, uma assinatura
+
+A migração 027 preserva todos os registros existentes. `organization_owner_claims` possui chave primária por proprietário e organização única. Um trigger também protege INSERT e promoção de membros para proprietário; tentativas simultâneas disputam a mesma chave única. `onboard_establishment` cria empresa, proprietário e configurações em uma transação, ou não cria nada. Uma conta já vinculada não pode abrir outra empresa no onboarding.
+
+`authorized_establishment` só retorna um vínculo inequívoco com propriedade regular. Não existe escolha de empresa por URL ou localStorage. Contas com vínculos ambíguos recebem uma orientação em Meu estabelecimento e não acessam operações até regularização. Os registros continuam no banco.
+
+Meu estabelecimento permite ao proprietário editar nome, telefone, endereço e mensagem do comprovante. Telefone/endereço/mensagem aparecem no comprovante; moeda e horário continuam BRL/Brasília, coerentes com os relatórios.
+
+`organization_subscriptions` mantém uma linha por empresa. `organization_subscription_claims` reserva cada identificador do provedor à empresa original; triggers impedem reutilização em outra empresa e movimentação da assinatura. A autorização de cobrança futura verifica também esse vínculo. Nenhuma integração ou cobrança Asaas foi ativada.
+
+### Auditoria e regularização sem perda
+
+Execute `node --env-file=.env.production-migration scripts/audit-ownership.mjs` somente para leitura. A consulta identifica proprietários múltiplos, contas com vários vínculos e assinaturas compartilhadas. A view `organization_ownership_conflicts` identifica conflitos de propriedade após a migração.
+
+Para conflitos identificados: (1) criar recuperação e inventariar organizações, usuários, operações e assinaturas; (2) obter confirmação do proprietário autorizado de cada empresa; (3) criar ou identificar uma conta proprietária distinta por empresa, sem reutilizar contas já proprietárias; (4) preparar e revisar uma transação administrativa de transferência dos vínculos e reservas de propriedade, incluindo revogação dos acessos excedentes somente após aprovação; (5) preservar os IDs das empresas, todos os usuários, pedidos, pagamentos, estoque e históricos e registrar a transferência; (6) atribuir uma assinatura futura independente por empresa, sem reaproveitar identificadores compartilhados; (7) repetir auditoria, testar login/isolation e comparar os saldos. Não executar exclusão de empresas, mesclagem ou transferência automática.
+
+Testes adicionais: `tests/single-establishment.test.mjs` reproduz uma base legada antes da migração e verifica preservação, onboarding único, INSERT direto, promoção indevida, vínculos ambíguos e assinatura compartilhada. A suíte HTTP envia dois cadastros simultâneos pela mesma conta e exige exatamente um 201 e um 409, repete a tentativa e verifica edição/isolamento dos dados cadastrais.

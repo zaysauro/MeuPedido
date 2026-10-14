@@ -14,10 +14,21 @@ for(const suffix of ['A','B']){
  assert.equal(signup.status,200,'cadastro: '+JSON.stringify(signup.data));assert.ok(signup.cookie);
  const signin=await api('/api/auth/sign-in/email',{email,password});assert.equal(signin.status,200,'login');
  const cookie=signin.cookie;assert.ok(cookie);
- const organization=await api('/api/organizations/create',{name:'Homologação '+runId+' '+suffix},cookie);assert.equal(organization.status,201,'organization '+JSON.stringify(organization.data));
+ const attempts=await Promise.all([1,2].map(()=>api('/api/organizations/create',{name:'Homologação '+runId+' '+suffix},cookie)));
+ assert.deepEqual(attempts.map(r=>r.status).sort(),[201,409],'criações concorrentes: apenas uma empresa');
+ const organization=attempts.find(r=>r.status===201);
+ assert.equal((await api('/api/organizations/create',{name:'Segunda empresa'},cookie)).status,409);
+ const owned=await api('/api/organizations',null,cookie);assert.equal(owned.data.organizations.length,1);assert.equal(owned.data.regularizationRequired,false);
  users.push({email,password,cookie,org:organization.data.organization.id});
 }
 const [a,b]=users;const org=a.org;
+const settings={name:'Homologação '+runId+' A',phone:'41999999999',address:'Rua de homologação, 10',receiptFooter:'Obrigado por testar'};
+assert.equal((await api('/api/establishment',settings,a.cookie,'PATCH')).status,200);
+const saved=await api('/api/establishment',null,a.cookie);assert.equal(saved.data.establishment.phone,settings.phone);assert.equal(saved.data.establishment.address,settings.address);assert.equal(saved.data.establishment.receipt_footer,settings.receiptFooter);
+assert.equal((await api('/api/establishment',{...settings,organizationId:b.org},a.cookie,'PATCH')).status,403);
+assert.equal((await api('/api/subscription?organizationId='+org,null,b.cookie)).status,403);
+assert.equal((await api('/api/establishment',null)).status,401);
+
 assert.equal((await api('/api/restaurant?resource=customers&organizationId='+org,null,b.cookie)).status,403,'isolamento leitura');
 assert.equal((await api('/api/restaurant',{organizationId:org,resource:'customers',name:'Invasor',phone:''},b.cookie)).status,403,'isolamento gravação');
 const ingredient=await api('/api/restaurant',{resource:'ingredients',organizationId:org,name:'Pão teste',unit:'un',quantity:10,minimumQuantity:2},a.cookie);assert.equal(ingredient.status,201);

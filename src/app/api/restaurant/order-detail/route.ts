@@ -21,7 +21,8 @@ async function handleGET(req:Request){
  COALESCE((SELECT jsonb_agg(jsonb_build_object('name',a.name_snapshot,'price_cents',a.price_cents)) FROM restaurant_order_item_addons a WHERE a.organization_id=i.organization_id AND a.order_item_id=i.id),'[]'::jsonb) AS addons
  FROM restaurant_order_items i WHERE i.organization_id=${org}::uuid AND i.order_id=${order}::uuid ORDER BY i.created_at`;
  const payments=await sql`SELECT id,method,amount_cents,created_at FROM restaurant_payments WHERE organization_id=${org}::uuid AND order_id=${order}::uuid ORDER BY created_at`;
- return NextResponse.json({order:rows[0],items,payments});
+ const settings=await sql`SELECT phone,address,receipt_footer FROM organization_settings WHERE organization_id=${org}::uuid`;
+ return NextResponse.json({order:rows[0],items,payments,establishment:settings[0]});
  }catch{return NextResponse.json({error:'service_unavailable'},{status:503})}
 }
 

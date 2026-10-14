@@ -7,7 +7,7 @@ export default function Register(){
  async function submit(e:FormEvent){e.preventDefault();setError('');setBusy(true);try{
  const result=await authClient.signUp.email({name,email,password});
  if(result.error){setError('Não foi possível criar a conta. Confira os dados ou tente entrar.');return;}
- if(!result.data?.token){setError('Confira seu e-mail para confirmar a conta antes de entrar.');return;}window.location.assign('/painel');
+ if(!result.data?.token){setError('Confira seu e-mail para confirmar a conta antes de entrar.');return;}window.location.assign('/onboarding');
  }catch{setError('Falha ao conectar com o serviço de cadastro.');}finally{setBusy(false);}}
  return <main style={{minHeight:'100vh',background:'#f3faf5',padding:'70px 20px',fontFamily:'Arial,sans-serif',color:'#153328'}}>
  <div style={{maxWidth:430,margin:'auto',background:'white',padding:32,borderRadius:20,border:'1px solid #dfebe2'}}>
