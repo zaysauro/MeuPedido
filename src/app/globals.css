@@ -10,3 +10,33 @@
 @media(max-width:900px){.sidebar{transform:translateX(-100%);visibility:hidden;width:260px;transition:transform .2s,visibility .2s}.sidebar.is-open{transform:translateX(0);visibility:visible}.workspace-content{margin-left:0}.menu-toggle{display:block}.sidebar-collapse{display:none}.nav-backdrop{display:block;position:fixed;inset:0;background:#10332b80;z-index:35;border:0;border-radius:0}.workspace-header{padding:12px 20px}.app-page{padding:24px}.customer-layout{grid-template-columns:1fr 1.2fr}}
 @media(max-width:600px){.workspace-header{height:auto;min-height:82px;padding:10px 16px;gap:10px;flex-wrap:wrap}.organization-switcher{max-width:none;flex-basis:calc(100% - 60px)}.workspace-header>.header-action{display:none}.app-page{padding:22px 16px}.page-heading{display:block;margin-bottom:22px}.page-heading h1{font-size:27px}.page-heading p{font-size:13px}.page-actions{padding-top:16px}.pos-layout,.customer-layout,.form-grid{grid-template-columns:1fr}.pos-order{position:static}.product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.panel{padding:18px}.delivery-column{grid-template-columns:1fr}.delivery-column>h2{grid-column:auto}.app-page table{display:table}.table-scroll table{min-width:420px}.page-actions button{width:auto}.filter-bar{gap:12px}.table-map{grid-template-columns:1fr}.app-footer{padding:16px}.app-dialog{padding:20px}.metric-card strong{font-size:23px}.account-summary strong{max-width:170px}}
 @media print{.workspace-header,.sidebar,.app-footer,.no-print{display:none!important}.workspace-content{margin:0}.app-page{padding:0;margin:0;max-width:none}}
+
+
+/* MeuPedido — premium marketing identity; operational workspace remains light. */
+.landing{
+  --green:#163d30;--green-dark:#0b2119;--ink:#f1f5ee;
+  --muted:#adbdaf;--line:rgba(169,218,178,.17);
+  background:#0a100d;color:#f1f5ee;
+  background-image:radial-gradient(ellipse at 75% 6%,rgba(35,99,68,.32),transparent 48%);
+}
+.landing .landing-header{border-bottom:1px solid rgba(178,221,183,.15)}
+.landing .brand,.landing .landing-header nav a:not(.button-primary){color:#f1f5ee}
+.landing .brand-by,.landing .eyebrow,.landing .hero-label{color:#9fd0ad}
+.landing .hero h1,.landing .landing-section h2{color:#f4f8f3}
+.landing .hero p,.landing .landing-section>p,.landing .feature p{color:#b3c2b5}
+.landing .hero-art,.landing .operation-flow,.landing .feature,.landing .steps>div,.landing .plan-section,.landing details{
+  background:linear-gradient(155deg,#17271d,#101a14);
+  color:#eef5ee;border:1px solid rgba(157,217,173,.18);
+  box-shadow:0 18px 48px rgba(0,0,0,.18);
+}
+.landing .feature,.landing .steps>div{transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease}
+.landing .feature:hover,.landing .steps>div:hover{
+  transform:translateY(-4px);border-color:rgba(135,222,160,.55);
+  box-shadow:0 25px 60px rgba(0,0,0,.28);
+}
+.landing .button-primary,.landing .landing-header .button-primary{background:#226b48;color:#fff!important}
+.landing .button-primary:hover{background:#2c8459}
+.landing .button-outline{border-color:rgba(169,218,178,.4);color:#f0f7ef}
+.landing .landing-footer{border-color:rgba(169,218,178,.2)}
+.landing .landing-footer a{color:#b6dec2}
+@media(prefers-reduced-motion:reduce){.landing .feature,.landing .steps>div{transition:none;transform:none!important}}
