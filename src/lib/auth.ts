@@ -15,8 +15,12 @@ function buildAuth() {
   const vercelOrigins = [process.env.VERCEL_URL, process.env.VERCEL_BRANCH_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL]
     .filter((host): host is string => Boolean(host))
     .map(host => 'https://' + host.replace(/^https?:\/\//, '').replace(/\/$/, ''));
+  const pool = new Pool({ connectionString: databaseUrl, max: 5 });
+  // Idle sockets can close when Neon suspends a compute or the network changes.
+  // The pool evicts the failed client; retain observability without logging credentials.
+  pool.on('error', () => console.warn('auth_database_idle_connection_lost'));
   return betterAuth({
-    database: new Pool({ connectionString: databaseUrl, max: 5 }),
+    database: pool,
     baseURL: authUrl,
     secret: authSecret,
     emailAndPassword: { enabled: true, requireEmailVerification: emailConfigured()&&process.env.REQUIRE_EMAIL_VERIFICATION==='true', revokeSessionsOnPasswordReset:true,
