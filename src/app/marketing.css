@@ -1,0 +1,35 @@
+/* MeuPedido marketing only. This stylesheet never styles the Kumo corporate site. */
+.landing{
+ --primary:#246C49;--primary-dark:#164B34;--primary-soft:#E8F3EB;
+ --accent:#B65E24;--text:#1C2B22;--text-soft:#526459;
+ --bg:#fff;--bg-alt:#F6F9F7;--border:rgba(28,43,34,.10);
+ --shadow-sm:0 1px 2px rgba(0,0,0,.06),0 4px 12px rgba(0,0,0,.06);
+ --shadow-lg:0 2px 4px rgba(0,0,0,.06),0 12px 24px rgba(0,0,0,.10),0 24px 48px rgba(0,0,0,.12);
+ background:#fff!important;background-image:none!important;color:var(--text)!important;
+}
+.landing .landing-header{border-bottom:1px solid var(--border);position:relative}
+.landing .brand,.landing .landing-header nav a:not(.button-primary){color:var(--text)!important}
+.landing .brand-by,.landing .eyebrow{color:var(--primary)!important}
+.landing .hero{min-height:clamp(550px,75vh,780px);gap:clamp(24px,5vw,75px)}
+.landing .hero h1,.landing .landing-section h2{color:var(--text)!important;letter-spacing:-.045em}
+.landing .hero h1 em{color:var(--primary)!important}
+.landing .hero p,.landing .landing-section>p,.landing .feature p{color:var(--text-soft)!important}
+.landing .hero-label{background:var(--primary-soft);color:var(--primary-dark)!important}
+.landing .hero-art{background:var(--primary-soft)!important;border:1px solid #D8E8DB!important;box-shadow:none!important}
+.landing .operation-flow{background:#fff!important;color:var(--text)!important;border:1px solid var(--border)!important;box-shadow:var(--shadow-lg)!important}
+.landing .flow-step{border-color:var(--border)}
+.landing .flow-step b{background:var(--primary-soft);color:var(--primary-dark)}
+.landing .flow-step small,.landing .flow-caption{color:var(--text-soft)}
+.landing .feature,.landing .steps>div,.landing details{background:#fff!important;color:var(--text)!important;border:1px solid var(--border)!important;box-shadow:var(--shadow-sm)!important;border-radius:16px}
+.landing .feature,.landing .steps>div{transition:transform 300ms ease-out,box-shadow 300ms ease-out}
+.landing .feature:hover,.landing .steps>div:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)!important}
+.landing .plan-section{background:var(--primary-dark)!important;color:#fff!important;border:0!important}
+.landing .plan-section h2{color:#fff!important}
+.landing .plan-section p{color:#DCEAE0!important}
+.landing .button-primary,.landing .landing-header .button-primary{background:var(--primary)!important;color:#fff!important}
+.landing .button-primary:hover{background:var(--primary-dark)!important}
+.landing .button-outline{border:1px solid var(--primary);color:var(--primary-dark)!important}
+.landing .landing-footer{border-color:var(--border)}
+.landing .landing-footer a{color:var(--primary-dark)}
+.landing a:focus-visible,.landing button:focus-visible,.landing summary:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+@media(prefers-reduced-motion:reduce){.landing *{animation:none!important;transition:none!important}.landing .feature:hover,.landing .steps>div:hover{transform:none}}
