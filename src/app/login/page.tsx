@@ -24,7 +24,7 @@ export default function LoginPage(){
  <form onSubmit={submit}><label>E-mail<input required type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)}/></label>
  <label>Senha<input required type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)}/></label>
  <button disabled={busy} type="submit">{busy?'Entrando…':'Entrar'}</button>
- {message&&<p role="alert" aria-live="polite" style={{color:'#b42318'}}>{message}</p>}</form>
+ {message&&<p role="alert" aria-live="polite">{message}</p>}</form>
  <p><Link href="/recuperar-senha">Esqueci minha senha</Link></p><p>Primeira vez aqui? <Link href="/cadastro">Criar conta</Link></p>
  </section></main>;
 }

@@ -26,19 +26,19 @@ export default function Operacao(){
  return <main style={{maxWidth:1100,margin:'32px auto',padding:24,color:'#16392c'}}>
  <a href="/painel">← Painel</a><PageHeader title="Cadastros da operação" description="Organize mesas, categorias e ingredientes do estabelecimento ativo."/><p>Gerencie mesas, ingredientes, categorias, clientes e acompanhe pedidos.</p>
 
- <nav aria-label="Módulos" style={{display:'flex',flexWrap:'wrap',gap:8,margin:'22px 0'}}>{(Object.keys(labels) as Resource[]).map(k=><button key={k} onClick={()=>setResource(k)} style={{padding:'10px 16px',borderRadius:9,border:'1px solid #bed6c8',background:resource===k?'#17663c':'white',color:resource===k?'white':'#16392c',cursor:'pointer'}}>{labels[k]}</button>)}</nav>
+ <nav aria-label="Módulos" style={{display:'flex',flexWrap:'wrap',gap:8,margin:'22px 0'}}>{(Object.keys(labels) as Resource[]).map(k=><button key={k} onClick={()=>setResource(k)} style={{padding:'10px 16px',borderRadius:9,border:'1px solid #bed6c8',background:resource===k?'var(--green-dark)':'var(--white)',color:'var(--ink)',cursor:'pointer'}}>{labels[k]}</button>)}</nav>
  {resource!=='orders'&&org&&<form onSubmit={submit} style={{padding:20,border:'1px solid #d7e5dc',borderRadius:12,display:'flex',flexWrap:'wrap',gap:12,alignItems:'end'}}>
  <label>Nome {resource==='tables'?'da mesa':''}<input required maxLength={160} value={name} onChange={e=>setName(e.target.value)} style={{display:'block',padding:10}}/></label>
  {resource==='customers'&&<label>Telefone<input maxLength={40} value={phone} onChange={e=>setPhone(e.target.value)} style={{display:'block',padding:10}}/></label>}
  {resource==='ingredients'&&<><label>Unidade<select value={unit} onChange={e=>setUnit(e.target.value)} style={{display:'block',padding:10}}>{['un','g','kg','ml','l'].map(v=><option key={v}>{v}</option>)}</select></label><label>Saldo inicial<input required type="number" step=".001" min="0" value={quantity} onChange={e=>setQuantity(e.target.value)} style={{display:'block',padding:10}}/></label><label>Estoque mínimo<input required type="number" step=".001" min="0" value={minimum} onChange={e=>setMinimum(e.target.value)} style={{display:'block',padding:10}}/></label></>}
  <button disabled={busy} style={{background:'#17663c',color:'white',border:0,borderRadius:8,padding:12}}>{busy?'Salvando...':'Cadastrar'}</button></form>}
  <h2>{labels[resource]} ({rows.length})</h2>
- {!rows.length?<p>Nenhum registro encontrado.</p>:<div style={{display:'grid',gap:10}}>{rows.map(row=><article key={row.id} style={{padding:15,border:'1px solid #d7e5dc',borderRadius:10,background:'#fff'}}>
+ {!rows.length?<p>Nenhum registro encontrado.</p>:<div style={{display:'grid',gap:10}}>{rows.map(row=><article key={row.id} style={{padding:15,border:'1px solid #d7e5dc',borderRadius:10,background:'var(--white)'}}>
  <strong>{row.name||row.label||(row.order_number?'Pedido #'+row.order_number:'Registro')}</strong>
  {resource==='ingredients'&&<span> · {row.quantity} {row.unit} {Number(row.quantity)<=Number(row.minimum_quantity)?' · Estoque baixo':''}</span>}
  {resource==='customers'&&<span> · {row.phone||'Sem telefone'}</span>}
  {resource==='orders'&&<span> · {row.channel} · {row.status} · {row.payment_status} · {((row.total_cents||0)/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</span>}
  </article>)}</div>}
- {error&&<p role="alert" style={{color:'#a52323'}}>{error}</p>}
+ {error&&<p role="alert" style={{color:'inherit'}}>{error}</p>}
  </main>
 }

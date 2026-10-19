@@ -11,32 +11,43 @@
 @media(max-width:600px){.workspace-header{height:auto;min-height:82px;padding:10px 16px;gap:10px;flex-wrap:wrap}.organization-switcher{max-width:none;flex-basis:calc(100% - 60px)}.workspace-header>.header-action{display:none}.app-page{padding:22px 16px}.page-heading{display:block;margin-bottom:22px}.page-heading h1{font-size:27px}.page-heading p{font-size:13px}.page-actions{padding-top:16px}.pos-layout,.customer-layout,.form-grid{grid-template-columns:1fr}.pos-order{position:static}.product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.panel{padding:18px}.delivery-column{grid-template-columns:1fr}.delivery-column>h2{grid-column:auto}.app-page table{display:table}.table-scroll table{min-width:420px}.page-actions button{width:auto}.filter-bar{gap:12px}.table-map{grid-template-columns:1fr}.app-footer{padding:16px}.app-dialog{padding:20px}.metric-card strong{font-size:23px}.account-summary strong{max-width:170px}}
 @media print{.workspace-header,.sidebar,.app-footer,.no-print{display:none!important}.workspace-content{margin:0}.app-page{padding:0;margin:0;max-width:none}}
 
-
-/* MeuPedido — premium marketing identity; operational workspace remains light. */
-.landing{
-  --green:#163d30;--green-dark:#0b2119;--ink:#f1f5ee;
-  --muted:#adbdaf;--line:rgba(169,218,178,.17);
-  background:#0a100d;color:#f1f5ee;
-  background-image:radial-gradient(ellipse at 75% 6%,rgba(35,99,68,.32),transparent 48%);
-}
-.landing .landing-header{border-bottom:1px solid rgba(178,221,183,.15)}
-.landing .brand,.landing .landing-header nav a:not(.button-primary){color:#f1f5ee}
-.landing .brand-by,.landing .eyebrow,.landing .hero-label{color:#9fd0ad}
-.landing .hero h1,.landing .landing-section h2{color:#f4f8f3}
-.landing .hero p,.landing .landing-section>p,.landing .feature p{color:#b3c2b5}
-.landing .hero-art,.landing .operation-flow,.landing .feature,.landing .steps>div,.landing .plan-section,.landing details{
-  background:linear-gradient(155deg,#17271d,#101a14);
-  color:#eef5ee;border:1px solid rgba(157,217,173,.18);
-  box-shadow:0 18px 48px rgba(0,0,0,.18);
-}
-.landing .feature,.landing .steps>div{transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease}
-.landing .feature:hover,.landing .steps>div:hover{
-  transform:translateY(-4px);border-color:rgba(135,222,160,.55);
-  box-shadow:0 25px 60px rgba(0,0,0,.28);
-}
-.landing .button-primary,.landing .landing-header .button-primary{background:#226b48;color:#fff!important}
-.landing .button-primary:hover{background:#2c8459}
-.landing .button-outline{border-color:rgba(169,218,178,.4);color:#f0f7ef}
-.landing .landing-footer{border-color:rgba(169,218,178,.2)}
-.landing .landing-footer a{color:#b6dec2}
-@media(prefers-reduced-motion:reduce){.landing .feature,.landing .steps>div{transition:none;transform:none!important}}
+/* Forest & charcoal: one palette for the public site and the operation. */
+:root{--green:#b5c99d;--green-dark:#193d2e;--mint:#23372b;--cream:#101612;--ink:#eceee5;--muted:#a5afa4;--line:#334037;--white:#19221c;--orange:#d5a065;--forest:#173b2b;--charcoal:#0c100d;--paper:#ece9dc}
+body{background:var(--cream);color:var(--ink)}
+a{color:var(--green)}
+button{background:#263b2c;border-color:#425944;color:var(--ink)}
+input:not([type=checkbox]),select,textarea{background:#111a14;border-color:#465247;color:var(--ink);color-scheme:dark}
+input::placeholder,textarea::placeholder{color:#96a292}
+th{background:#222f25;color:#b7c4b3}
+.button-primary,.header-action,.auth-card button{background:#b5c99d;color:#152218!important;border-color:#b5c99d}
+.button-primary:hover,.header-action:hover{background:#c7d7b6;transform:translateY(-1px)}
+.button-outline{border-color:#5c705c;color:#e2e8d7}
+.brand-icon{background:#b5c99d;color:#152218;border-radius:9px}
+.sidebar{background:var(--charcoal);border-color:#29372d}
+.sidebar .brand{color:var(--paper)}
+.sidebar nav h2{color:#98a493}
+.sidebar nav a{color:#b9c2b5}
+.sidebar nav a.selected{background:#244a35;color:#e2edd7;box-shadow:inset 3px 0 #b5c99d}
+.sidebar nav a:hover:not(.selected){background:#1d2c21;color:#fff}
+.sidebar-collapse{background:#1a251d;color:#bac7b4}
+.workspace-header{background:#14241a;border-color:#314336}
+.app-footer{color:#9ca894}
+.panel,.metric-card,.app-page article,.quick-links a,.customer-list button{background:var(--white);border-color:var(--line);box-shadow:0 8px 24px #00000012}
+.panel,.metric-card{border-radius:12px}
+.metric-card:first-child{background:#1e4530;border-color:#416147;color:#f0f2e8}
+.metric-card small,.metric-card span,.metric-card:first-child small{color:#bbc7af}
+.status-cell,.status-cell:nth-child(3){background:#263a2b;color:#bccbb5}
+.status-cell:nth-child(2){background:#3a3122;color:#e0c899}
+.status-cell strong{color:#e8eddd}
+.kds-column,.delivery-column{background:#152019;border:1px solid #2c3a30}
+.badge{background:#314735;color:#d8e8c9}
+.notice,p[role=status]{background:#243d2c;color:#d3e5c6}
+.notice.error,p[role=alert]{background:#462c25;color:#f2c0a7}
+.eyebrow{color:#b3c3a5}
+.product-grid button,.customer-list button{background:var(--white)!important;color:var(--ink);border-color:var(--line)!important}
+.app-page [style*='background: white'],.app-page [style*='background:white']{background:var(--white)!important}
+.app-page [style*='color: #17663c'],.app-page [style*='color:#17663c']{color:var(--green)!important}
+.customer-list button.selected{background:#294431;border-color:#a8c08f}
+.auth-page{background:radial-gradient(ellipse at 15% 20%,#244833 0,transparent 55%),#0c120e}
+.auth-card{background:#18251b;border-color:#3a4d3b;box-shadow:0 30px 100px #0005}
+.auth-card h1{color:var(--paper)}
