@@ -1,72 +1,55 @@
-# MeuPedido — acompanhamento de implementação
+# MeuPedido — homologação multidevice, 22/10/2026
 
-## Estratégia
-Código primeiro no GitHub. Não aplicar migrações nem iniciar deploy até revisão conjunta.
-MeuCaixa é um produto independente. Asaas será integrado por último.
+## Publicação
 
-## Migrações Neon
-- Já executadas pelo proprietário anteriormente: 000_better_auth.sql, 001_organizations.sql, 002_menu_inventory.sql.
-- Pendentes de execução, nesta ordem: 004_restaurant_operations.sql, 005_order_checkout.sql, 006_order_payments.sql, 007_order_management.sql, 008_inventory_recipes.sql, 009_recipes.sql, 010_cash_register.sql, 011_inventory_consumption.sql, 012_kitchen_stock_transition.sql, 013_delivery_addresses.sql, 014_delivery_checkout.sql.
-- NÃO EXECUTAR 003_order_integrity.sql: rascunho legado incompatível.
-- Migrações futuras deverão ser adicionadas aqui e revisadas antes de executar.
+- Código funcional: `81b5b683789d0ea5594d6317adad60ab71994aeb`, branch `codex/multidevice-homologacao-20261022`.
+- Preview Vercel READY: `dpl_3HkF5E5sx7PQXDe9Qi3PrdK8Z44a`, https://meupedido-en6zop9mt-bruno-02a0.vercel.app.
+- Alias: https://meupedido-git-codex-multidevice-homologacao-20261022-bruno-02a0.vercel.app.
+- Proteção Vercel mantida; link temporário privado entregue ao proprietário. Nunca publicar tokens ou senhas de teste no Git.
+- Produção permanece no commit `479bb479257a241acbaefcad97eb59fd5ad7c04e`. Dados de produção não foram alterados nesta entrega.
 
-## Funcionalidades com código no repositório
-- Cadastro e login via Better Auth; há erro de origem ainda não validado em produção.
-- Estabelecimentos, categorias, cardápio, edição de produtos, fotos por URL e disponibilidade.
-- Adicionais, PDV, pedidos, cozinha, comandas, transferência de itens e pagamentos parciais.
-- Estoque, movimentações, fichas técnicas e custo estimado.
-- Abertura, movimentação e fechamento de caixa.
+## Arquitetura e funcionalidades
 
-## Atualizações recentes
-- Criada função de baixa idempotente de ingredientes e endpoint explícito de consumo (011). Ainda não conectada automaticamente ao fluxo de venda; depende de validação das regras de negócio.
-- Criados relatórios de vendas, meios de pagamento, produtos mais vendidos e exportação CSV.
-- Os relatórios são brutos, não conciliados, e não representam lucro líquido.
+Next.js continua como API e aplicação única, Better Auth autentica cada funcionário e PostgreSQL determina estabelecimento e permissões. Neon Realtime entrega snapshots autorizados por sessão/estabelecimento. Mudanças confirmadas atualizam a versão operacional e notificações na mesma transação. O cliente reconcilia com as APIs, renova autorizações e recupera snapshots após reconexão. Não há polling operacional periódico nem sockets mantidos nas funções Vercel.
 
-- A transição de cozinha agora chama a função SQL 012; ao iniciar preparo, desconta ingredientes em transação única. Requer migrações 011 e 012 e validação em Neon.\n- Mapa de mesas em /mesas: consulta dedicada de todas as comandas abertas, sem limite artificial de 150; link para comanda selecionada.\n\n- Comandas: inclusão de produtos adicionais em pedidos abertos, usando a função SQL 007. Adicionais novos ainda não disponíveis neste formulário.\n\n## Pendências essenciais
-- Verificar compilação e testes end-to-end de todos os módulos, contratos entre API e banco, políticas de autorização.
-- Corrigir o login/cadastro e as origens confiáveis.
-- Variantes de produto, upload seguro de fotos e organização avançada do cardápio.
-- Edição de comanda no PDV, mapa de mesas, divisão de contas e descontos.
-- KDS aprimorado com alertas e tempos de preparo.
-- Baixa automática idempotente de ingredientes, estornos e conciliação de estoque.
-- Vincular pagamentos em dinheiro ao turno de caixa, conciliar diferença no fechamento.
-- Cadastro completo de clientes, endereços, delivery e retirada.
-- Relatórios financeiros, exportação CSV e indicadores de vendas.
-- Impressão térmica: navegador/driver ou agente local; web app isolado não imprime silenciosamente em impressoras arbitrárias.
-- Configurações, permissões, logs, limites de tentativas e auditoria de segurança.
-- Testes de concorrência, multiempresa, acessibilidade e responsividade.
-- Asaas: trial, checkout, webhook, assinaturas e cancelamento (última etapa).
+O registro durável de eventos origina as notificações; o transporte ao vivo acompanha commits do Postgres, eliminando a publicação HTTP externa entre commit e entrega. Web Push tem entregas persistentes por evento/dispositivo, leases, idempotência e backoff.
 
-## Regra de prontidão
-Commits e telas não significam sistema validado. Só marcar como pronto depois de migração, build, integração e testes reais.
+- Uma conta proprietária, um estabelecimento, uma assinatura; criação adicional bloqueada, dados legados preservados.
+- Proprietário, gerente com grants opcionais, caixa, garçom e cozinha; autorização no backend, organização derivada da sessão.
+- Mesma comanda entre garçons, caixa e cozinha; rodadas com batch próprio; pedidos/pagamentos idempotentes.
+- KDS por item, sem preços, com tempos, notas, adicionais e recebido/preparando/pronto/entregue.
+- Estoque transacional por item; cancelamento de item preparado bloqueado sob lock.
+- Notificações com histórico, não lidas, leitura e sons distintos opt-in.
+- PWA com manifest, ícones, offline e atualização explícita; cache só público. VAPID configurado no preview; push por usuário/dispositivo/organização, com cleanup no logout.
+- Digital/impressão/híbrido, jobs por rodada, ticket térmico, reimpressão idempotente e histórico de falhas. Impressão pelo diálogo do navegador e confirmação humana.
 
-## Entregas recentes (ainda sem deploy)
-- PDV: seleção de cliente cadastrado ao criar pedido; cliente opcional.
-- 013_delivery_addresses.sql: endereços por cliente e campos de endereço/taxa em pedidos. Executar após 012; não executar ainda sem revisar o fluxo de checkout.
-- /api/restaurant/addresses: cadastro e consulta de endereços com checagem de associação ao estabelecimento.
-- Pendente: integrar endereço e taxa ao checkout, selecionar endereço na interface, testar validações, conciliação e impressão.
+## Neon
 
-## Delivery: estado atual
-- PDV permite selecionar cliente, endereco e informar taxa de entrega.
-- Migracao 014 faz checkout de delivery atomico, validando que endereco pertence ao cliente e estabelecimento.
-- Pagamento e total consideram taxa, mas ainda falta revisao visual, testes de build e integracao.
-- Caixa ainda nao possui conciliacao automatica. Nao executar migrações antes da revisao.
+Projeto `frosty-forest-75298234`, branch isolada `br-still-recipe-b4wec14a`, cópia da produção em 19/10, expira em 26/10/2026. Migrations 028–036 aplicadas somente nela. A base 004–027 já estava aplicada anteriormente em produção. Nenhuma migration destrutiva ou exclusão de clientes. Fixtures em organizações novas no banco isolado. Realtime habilitado com origens explícitas. Cobrança Asaas desativada; `BILLING_ENFORCED=false`.
 
-## Novas entregas em codigo
-- 018/019: restricoes de integridade para pagamentos/turnos e transferencias apos inicio do preparo.
-- 020/021: acompanhamento de delivery independente da cozinha, com transicoes atomicas.
-- /api/restaurant/delivery e /entregas: listagem e controle de entrega por estabelecimento.
-- /cozinha/imprimir: ticket de producao nao fiscal via navegador.
-- CI de TypeScript em .github/workflows/typecheck.yml; aguardar resultado antes de considerar validado.
-- Detalhes de pedido agora incluem endereco da entrega.
-- IMPORTANTE: migrações 004 a 021 nao executadas, nao rodar 003; ainda falta revisar contratos e testes end-to-end.
+## Testes e evidências
 
-## Revisao de integracao (2026-10-12)
-- Corrigida validacao da taxa de delivery no PDV: expressao regular reconhece numeros decimais.
-- Corrigido total visual do pedido para incluir taxa de entrega.
-- Corrigido endpoint de delivery para preservar nome e telefone do entregador quando nao enviados.
-- Comprovante inclui endereco e taxa de entrega.
-- Cozinha retorna 409 para transicao invalida e estoque insuficiente.
-- Migração 022 exige validacao em banco junto do cancelamento de pedido.
-- Nao executar migrações sem backup e revisao; 004-022 ainda nao aplicadas.
-- Testes de compilacao e fluxo completo ainda nao confirmados.
+- `npm run typecheck`: PASS.
+- `npm test`: 16 PASS, zero falhas.
+- `npm run build`: PASS; build remoto READY.
+- HTTP local com Neon real: quatro sessões, fluxo garçom/cozinha/caixa, dois garçons, duas cozinhas, rodadas posteriores, estoque/pagamento sem duplicação, reconexão e sessão expirada: PASS.
+- Staff HTTP: convites concorrentes, perfis, grants, isolamento, origem, revogação/reativação e segunda empresa proibida: PASS.
+- Duas conexões Postgres: preparo/cancelamento, cancelamento/preparo, pagamento/cancelamento e pagamento repetido: 4/4 PASS.
+- Neon WebSocket: quatro conexões, commit, rollback, outro estabelecimento e revogação: PASS.
+- Preview publicado: health200 conectado, quatro logins/subscriptions reais, pedido do garçom no KDS e caixa, preparo, aviso de pronto e entrega: PASS. Rotas mesas/PDV/comandas/cozinha/funcionários/notificações/configurações e recursos PWA: HTTP200.
+- PWA/push automatizado: endpoints, SSRF, cache seguro, retries e remoção de inscrições inválidas com provedor controlado. Não comprova entrega pelo sistema operacional.
+
+## Pendências reais
+
+1. Homologação visual/interativa em celulares reais; controle do computador aguardava permissões do sistema. Os testes multidevice acima usam API/SDK e sessões independentes, não quatro navegadores automatizados.
+2. Instalação física da PWA, áudio e recebimento Web Push em iOS/Android compatíveis.
+3. Scheduler de recuperação push: endpoint protegido e worker prontos, mas agendamento externo não provisionado. Dispatch após mutações implementado; entrega garantida em segundo plano não está homologada.
+4. Impressora física/driver não homologados; não existe impressão silenciosa universal.
+5. Novo login atualiza imediatamente o menu após alteração de role/grants. O servidor aplica a permissão nova em cada requisição; refresh instantâneo dessa navegação pode ser ampliado.
+6. Produção requer recovery point atualizado, migrations028–036 e realtime/push produtivos após homologação. READY do preview não significa aprovação final de produção.
+
+## Computador e dois celulares
+
+Abra o link privado nos três dispositivos. Use logins individuais do mesmo estabelecimento: caixa no computador, cozinha em um celular e garçom no outro. Abra o turno no caixa. No garçom, escolha a mesa e envie pedido pelo PDV. Na cozinha, inicie preparo e marque pronto. No garçom, registre entrega; no caixa, receba pagamento. Confira a mesa livre. Repita adicionando uma segunda rodada e confira que a primeira não é reenviada.
+
+Detalhes: [auditoria](MULTIDEVICE_AUDIT.md), [realtime/impressão](REALTIME_AND_PRINTING.md) e [PWA](PWA.md).
