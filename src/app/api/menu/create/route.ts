@@ -16,7 +16,7 @@ async function handlePOST(request:Request){
  const sql=getDb();
  const rows=await sql`INSERT INTO restaurant_menu_items(organization_id,name,description,price_cents)
  SELECT m.organization_id,${v.name.trim()},${v.description},${v.priceCents as number}
- FROM organization_members m WHERE m.organization_id=${v.organizationId}::uuid AND m.user_id=${session.user.id} AND m.role IN ('owner','admin')
+ FROM organization_members m WHERE m.organization_id=${v.organizationId}::uuid AND m.user_id=${session.user.id} AND restaurant_has_permission(m.organization_id,${session.user.id},'manage')
  RETURNING id,name,price_cents`;
  if(!rows[0])return NextResponse.json({error:'forbidden'},{status:403});
  return NextResponse.json({item:rows[0]},{status:201});

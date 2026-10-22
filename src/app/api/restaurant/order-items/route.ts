@@ -23,10 +23,10 @@ async function handlePOST(req:Request){
  try{
  const session=await createAuth().api.getSession({headers:await headers()});if(!session)return NextResponse.json({error:'unauthorized'},{status:401});
  const b=await req.json() as Record<string,unknown>;
- if(typeof b.organizationId!=='string'||!uuid.test(b.organizationId)||typeof b.orderId!=='string'||!uuid.test(b.orderId)||!Array.isArray(b.items)||b.items.length<1||b.items.length>100)return NextResponse.json({error:'invalid_fields'},{status:400});
+ if(typeof b.requestId!=='string'||!uuid.test(b.requestId)||typeof b.organizationId!=='string'||!uuid.test(b.organizationId)||typeof b.orderId!=='string'||!uuid.test(b.orderId)||!Array.isArray(b.items)||b.items.length<1||b.items.length>100)return NextResponse.json({error:'invalid_fields'},{status:400});
  for(const x of b.items){if(!x||typeof x!=='object'||Array.isArray(x))return NextResponse.json({error:'invalid_item'},{status:400});const v=x as Record<string,unknown>;if(typeof v.menuItemId!=='string'||!uuid.test(v.menuItemId)||!Number.isInteger(v.quantity)||Number(v.quantity)<1||Number(v.quantity)>99||typeof v.notes!=='string'||v.notes.length>500||!Array.isArray(v.addons)||v.addons.length>20||v.addons.some(a=>typeof a!=='string'||!uuid.test(a))||new Set(v.addons).size!==v.addons.length)return NextResponse.json({error:'invalid_item'},{status:400})}
  const sql=getDb();
- const rows=await sql`SELECT * FROM restaurant_add_order_items(${b.organizationId}::uuid,${session.user.id},${b.orderId}::uuid,${JSON.stringify(b.items)}::jsonb)`;
+ const rows=await sql`SELECT restaurant_add_items_once(${b.organizationId}::uuid,${session.user.id},${b.orderId}::uuid,${b.requestId as string}::uuid,${JSON.stringify(b.items)}::jsonb) AS id`;
  return NextResponse.json({order:rows[0]},{status:201});
  }catch{return NextResponse.json({error:'order_not_editable'},{status:409})}
 }

@@ -7,6 +7,7 @@ async function handle(req:Request){try{
  const session=await createAuth().api.getSession({headers:await headers()});if(!session)return NextResponse.json({error:'unauthorized'},{status:401});
  const state=await accountEstablishment(session.user.id),org=state.organization;
  if(!org)return NextResponse.json({error:state.regularizationRequired?'Regularização de vínculos necessária.':'Conclua seu cadastro inicial.'},{status:409});
+ if(org.role!=='owner')return NextResponse.json({error:'Somente o proprietário pode acessar as configurações.'},{status:403});
  const sql=getDb();
  if(req.method==='PATCH'){
   const origin=req.headers.get('origin');if(!origin||![new URL(req.url).origin,process.env.BETTER_AUTH_URL].includes(origin))return NextResponse.json({error:'invalid_origin'},{status:403});

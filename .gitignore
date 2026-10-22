@@ -8,3 +8,5 @@ node_modules/
 .validation-user.json
 .onboarding-user.json
 .vercel/
+
+.validation-multidevice-accounts.json

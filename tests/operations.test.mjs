@@ -29,10 +29,10 @@ test('migrações e operação real PostgreSQL: isolamento, estoque, caixa e del
  await rejects("SELECT restaurant_cash_open($1,'a',0)",[a],/duplicate/);
  await db.query("SELECT restaurant_kitchen_transition($1,'a',$2,'preparando')",[a,order]);
  assert.equal(Number((await one('SELECT quantity FROM restaurant_ingredients WHERE id=$1',[ingredient.id])).quantity),8);
- await rejects("SELECT restaurant_kitchen_transition($1,'a',$2,'preparando')",[a,order],/invalid_transition/);
+ await db.query("SELECT restaurant_kitchen_transition($1,'a',$2,'preparando')",[a,order]);
  await db.query("SELECT restaurant_consume_order_inventory($1,'a',$2)",[a,order]);
  assert.equal(Number((await one('SELECT quantity FROM restaurant_ingredients WHERE id=$1',[ingredient.id])).quantity),8);
- await rejects("SELECT restaurant_add_order_items($1,'a',$2,$3)",[a,order,lines],/editable/);
+ // Later rounds are covered by multidevice.test.mjs; preparation no longer closes the comanda.
  await rejects("SELECT restaurant_cancel_order($1,'a',$2)",[a,order],/cannot_be_cancelled/);
  await db.query("SELECT restaurant_kitchen_transition($1,'a',$2,'pronto')",[a,order]);
  await db.query("SELECT restaurant_record_payment($1,'a',$2,'dinheiro',2000)",[a,order]);

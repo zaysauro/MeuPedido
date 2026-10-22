@@ -17,8 +17,8 @@ async function handlePOST(req:Request) {
   if(typeof b.organizationId!=='string'||!uuid.test(b.organizationId)||!['create','update','delete'].includes(String(b.action)))return bad('invalid_fields');
   const org=b.organizationId;
   const sql=getDb();
-  const role=await sql`SELECT role FROM organization_members WHERE organization_id=${org}::uuid AND user_id=${session.user.id}`;
-  if(!role.length||!['owner','admin'].includes(String(role[0].role)))return bad('forbidden',403);
+  const permission=await sql`SELECT restaurant_has_permission(${org}::uuid,${session.user.id},'manage') AS allowed`;
+  if(!permission[0]?.allowed)return bad('forbidden',403);
   if(b.action==='delete') {
    if(typeof b.itemId!=='string'||!uuid.test(b.itemId))return bad('invalid_item');
    const used=await sql`SELECT 1 FROM restaurant_order_items WHERE organization_id=${org}::uuid AND menu_item_id=${b.itemId}::uuid LIMIT 1`;
@@ -31,6 +31,7 @@ async function handlePOST(req:Request) {
   const price=b.priceCents;
   const image=typeof b.imageUrl==='string'?b.imageUrl.trim():'';
   if(name.length<1||name.length>160||description.length>2000||!Number.isSafeInteger(price)||Number(price)<0||Number(price)>1000000000||image.length>2048||typeof b.available!=='boolean')return bad('invalid_product');
+  if(b.requiresPreparation!==undefined&&typeof b.requiresPreparation!=='boolean')return bad('invalid_preparation');
   if(image){try{const u=new URL(image);if(u.protocol!=='https:')return bad('invalid_image_url')}catch{return bad('invalid_image_url')}}
   const category=b.categoryId===null||b.categoryId===''?null:b.categoryId;
   if(category!==null&&(typeof category!=='string'||!uuid.test(category)))return bad('invalid_category');
@@ -39,14 +40,14 @@ async function handlePOST(req:Request) {
    if(!valid.length)return bad('invalid_category');
   }
   if(b.action==='create'){
-   const rows=await sql`INSERT INTO restaurant_menu_items(organization_id,category_id,name,description,price_cents,image_url,available)
-    VALUES(${org}::uuid,${category}::uuid,${name},${description},${price as number},${image||null},${b.available as boolean})
+   const rows=await sql`INSERT INTO restaurant_menu_items(organization_id,category_id,name,description,price_cents,image_url,available,requires_preparation)
+    VALUES(${org}::uuid,${category}::uuid,${name},${description},${price as number},${image||null},${b.available as boolean},${b.requiresPreparation!==false})
     RETURNING id,name,price_cents,available`;
    return NextResponse.json({item:rows[0]},{status:201});
   }
   if(typeof b.itemId!=='string'||!uuid.test(b.itemId))return bad('invalid_item');
   const rows=await sql`UPDATE restaurant_menu_items SET category_id=${category}::uuid,name=${name},description=${description},
-    price_cents=${price as number},image_url=${image||null},available=${b.available as boolean},updated_at=now()
+    price_cents=${price as number},image_url=${image||null},available=${b.available as boolean},requires_preparation=coalesce(${typeof b.requiresPreparation==='boolean'?b.requiresPreparation:null}::boolean,requires_preparation),updated_at=now()
     WHERE id=${b.itemId}::uuid AND organization_id=${org}::uuid RETURNING id,name,price_cents,available`;
   return rows.length?NextResponse.json({item:rows[0]}):bad('not_found',404);
  }catch{return bad('operation_failed',503)}

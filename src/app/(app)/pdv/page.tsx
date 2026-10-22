@@ -1,4 +1,5 @@
 'use client';
+import {hasPermission} from '@/lib/permissions';
 import {PageHeader} from '@/components/ui';
 import {useOrganization} from '@/components/organization-provider';
 import {apiFetch} from '@/lib/api-client';
@@ -9,7 +10,7 @@ type Org={id:string;name:string};type Item={id:string;name:string;price_cents:nu
 type Addon={id:string;menu_item_id:string;name:string;price_cents:number;active:boolean};
 type Line={menuItemId:string;name:string;price:number;quantity:number;notes:string;addons:string[]};
 export default function PDV(){
- const {organizations:orgs,organizationId:org,revision}=useOrganization();
+ const {organizations:orgs,organizationId:org,organization,revision}=useOrganization();
  const requestKey=useRef('');
  const requestFingerprint=useRef('');
  const [discount,setDiscount]=useState('0,00');
@@ -37,7 +38,7 @@ export default function PDV(){
  {channel==='delivery'&&<section><label>Endereço<select value={addressId} onChange={e=>setAddressId(e.target.value)}><option value="">Selecione</option>{addresses.map(a=><option key={a.id} value={a.id}>{a.street}, {a.number}</option>)}</select></label><label>Taxa de entrega<input value={deliveryFee} onChange={e=>setDeliveryFee(e.target.value)}/></label></section>}
  {lines.map(l=><article key={l.menuItemId} style={{padding:12,borderBottom:'1px solid #ddd'}}><strong>{l.name}</strong><div style={{display:'flex',gap:8,alignItems:'center',marginTop:8}}><button onClick={()=>setLines(a=>a.map(x=>x.menuItemId===l.menuItemId?{...x,quantity:Math.max(1,x.quantity-1)}:x))}>−</button>{l.quantity}<button onClick={()=>setLines(a=>a.map(x=>x.menuItemId===l.menuItemId?{...x,quantity:Math.min(99,x.quantity+1)}:x))}>+</button><button onClick={()=>setLines(a=>a.filter(x=>x.menuItemId!==l.menuItemId))}>Remover</button></div>{addons.filter(a=>a.active&&a.menu_item_id===l.menuItemId).map(a=><label key={a.id} style={{display:'block',padding:5}}><input type="checkbox" checked={l.addons.includes(a.id)} onChange={e=>setLines(old=>old.map(x=>x.menuItemId!==l.menuItemId?x:{...x,addons:e.target.checked?[...x.addons,a.id]:x.addons.filter(id=>id!==a.id)}))}/>{a.name} (+{(a.price_cents/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})})</label>)}<label>Observação<input maxLength={500} value={l.notes} onChange={e=>setLines(a=>a.map(x=>x.menuItemId===l.menuItemId?{...x,notes:e.target.value}:x))} style={{display:'block',padding:8,width:'95%'}}/></label></article>)}
  <label>Observações gerais<textarea value={notes} maxLength={1000} onChange={e=>setNotes(e.target.value)} style={{display:'block',width:'95%',padding:8}}/></label>
- <label>Desconto (R$)<input inputMode="decimal" value={discount} onChange={e=>setDiscount(e.target.value)}/></label><small>Descontos exigem perfil de proprietário ou administrador.</small><h2>Total: {((total-(parseBRL(discount)??0)+(channel==='delivery'?(parseBRL(deliveryFee)??0)||0:0))/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</h2>
+ {hasPermission(organization?.role||'','manage',organization?.permissions)&&<><label>Desconto (R$)<input inputMode="decimal" value={discount} onChange={e=>setDiscount(e.target.value)}/></label><small>Descontos exigem permissão administrativa.</small></>}<h2>Total: {((total-(parseBRL(discount)??0)+(channel==='delivery'?(parseBRL(deliveryFee)??0)||0:0))/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</h2>
  <button disabled={busy||!lines.length||(channel==='mesa'&&!tableId)||(channel==='delivery'&&(!customerId||!addressId))} onClick={save} style={{background:'#17663c',color:'white',padding:14,border:0,borderRadius:8,width:'100%',cursor:'pointer'}}>{busy?'Registrando...':'Registrar pedido'}</button>
  <p style={{fontSize:13}}>O pedido será enviado à cozinha. Registre os pagamentos na comanda.</p></section></div>{message&&<p role="status">{message}</p>}</main>
 }

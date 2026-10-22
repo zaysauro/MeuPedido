@@ -1,0 +1,12 @@
+{
+  "checkedAt": "2026-10-22T09:09:54.372Z",
+  "checks": 37,
+  "environment": "isolated-local-neon",
+  "vapidSignatureAndEncryption": "passed",
+  "httpPushApis": "passed",
+  "workerAuthenticationAndDispatch": "passed",
+  "pwaHttpAssets": "passed",
+  "browserInstallation": "not-tested",
+  "realProviderDelivery": "not-tested",
+  "scheduledWorker": "not-provisioned"
+}

@@ -24,7 +24,7 @@ async function handlePOST(req:Request){
  const sql=getDb();
  const rows=await sql`INSERT INTO restaurant_addons(organization_id,menu_item_id,name,price_cents)
  SELECT i.organization_id,i.id,${b.name.trim()},${b.priceCents as number} FROM restaurant_menu_items i
- JOIN organization_members m ON m.organization_id=i.organization_id AND m.user_id=${session.user.id} AND m.role IN ('owner','admin')
+ JOIN organization_members m ON m.organization_id=i.organization_id AND m.user_id=${session.user.id} AND restaurant_has_permission(m.organization_id,${session.user.id},'manage')
  WHERE i.organization_id=${b.organizationId}::uuid AND i.id=${b.menuItemId}::uuid RETURNING id,name,price_cents,menu_item_id`;
  if(!rows.length)return NextResponse.json({error:'forbidden'},{status:403});
  return NextResponse.json({addon:rows[0]},{status:201});

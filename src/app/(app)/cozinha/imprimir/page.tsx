@@ -1,25 +1,36 @@
 'use client';
 import {useOrganization} from '@/components/organization-provider';
-import {apiFetch} from '@/lib/api-client';
-import {useEffect,useState} from 'react';
-import {authClient} from '@/lib/auth-client';
-type Org={id:string;name:string};
-type Order={id:string;order_number:number;channel:string;status:string;notes:string|null;table_label:string|null;created_at:string;items:{name:string;quantity:number;notes:string|null;addons:string[]}[]};
+import {useCallback,useEffect,useRef,useState} from 'react';
+type Snapshot={order_number:number;channel:string;table_label:string|null;created_at:string;establishment_name:string;notes:string|null;new_items:boolean;items:{id:string;name:string;quantity:number;notes:string|null;addons:string[]}[]};
+type Job={id:string;order_id:string;batch_id:string;reprint_of:string|null;snapshot:Snapshot;status:string;created_at:string};
+type ListedJob={id:string;order_number:string;table_label:string|null;status:string;created_at:string;reprint_of:string|null;new_items:string};
+type Attempt={action:string;details:string;created_at:string};
+type Batch={batch_id:string;created_at:string;item_count:number};
+const statusName:Record<string,string>={pending:'Aguardando impressão',dialog_opened:'Diálogo aberto — confirme o resultado',confirmed:'Saída confirmada pelo funcionário',failed:'Falha informada'};
 export default function ImprimirCozinha(){
- const {organizations:orgs,organizationId:org,revision}=useOrganization();
- const [paper,setPaper]=useState('80');
- const {data:session,isPending}=authClient.useSession();
- const [orderId,setOrderId]=useState(''),[order,setOrder]=useState<Order|null>(null),[error,setError]=useState('');
- useEffect(()=>{setOrderId(new URLSearchParams(window.location.search).get('orderId')||'');},[]);
- useEffect(()=>{if(!org||!orderId)return;apiFetch('/api/restaurant/kitchen?organizationId='+encodeURIComponent(org),{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).then(d=>{const found=(d.orders||[]).find((o:Order)=>o.id===orderId);if(found)setOrder(found);else setError('Pedido nao encontrado entre os pedidos ativos')}).catch(()=>setError('Nao foi possivel carregar pedido'))},[org,orderId]);
- if(isPending)return <main>Carregando...</main>;
- if(!session)return <main><a href="/login">Entrar</a></main>;
- return <main className="thermal-ticket" style={{maxWidth:360,margin:'auto',padding:18,fontFamily:'monospace',color:'#111'}}>
- <div className="no-print"><a href="/cozinha">Voltar a cozinha</a><label>Papel<select value={paper} onChange={e=>setPaper(e.target.value)}><option value="58">58 mm</option><option value="80">80 mm</option></select></label><button disabled={!order} onClick={()=>window.print()}>Imprimir pedido</button></div>
- {order&&<article><h1>COZINHA #{order.order_number}</h1><p>{orgs.find(o=>o.id===org)?.name}</p><p>{new Date(order.created_at).toLocaleString('pt-BR')}</p><p>{order.channel} {order.table_label||''}</p><hr/>
- {order.items.map((i,k)=><section key={k}><h2>{i.quantity} x {i.name}</h2>{i.addons?.length>0&&<p>Adicionais: {i.addons.join(', ')}</p>}{i.notes&&<p>Obs.: {i.notes}</p>}</section>)}
- {order.notes&&<p>OBS. GERAL: {order.notes}</p>}<hr/><p>Pedido para preparo — não fiscal</p><p>MeuPedido · Kumo<br/>www.sistemakumo.com.br</p></article>}
- {error&&<p role="alert">{error}</p>}
- <style jsx global>{`@media print{.no-print{display:none!important}@page{size:auto;margin:3mm}.app-page>main.thermal-ticket{width:${Number(paper)-6}mm!important;max-width:${Number(paper)-6}mm!important;font-family:monospace!important;font-size:11px!important}.thermal-ticket h1,.thermal-ticket h2{font-family:monospace;font-size:15px;letter-spacing:0}.thermal-ticket article{border:0!important;box-shadow:none}.thermal-ticket p{overflow-wrap:anywhere}body{background:white;margin:0}}`}</style>
- </main>;
+ const {organizationId,revision}=useOrganization();
+ const [jobId,setJobId]=useState(''),[orderId,setOrderId]=useState(''),[job,setJob]=useState<Job|null>(null),[jobs,setJobs]=useState<ListedJob[]>([]),[batches,setBatches]=useState<Batch[]>([]),[attempts,setAttempts]=useState<Attempt[]>([]);
+ const [paper,setPaper]=useState(80),[printer,setPrinter]=useState(''),[mode,setMode]=useState('digital'),[error,setError]=useState(''),[busy,setBusy]=useState(false),[failure,setFailure]=useState(''),[ready,setReady]=useState(false);
+ const pending=useRef<{key:string;requestId:string}|null>(null);
+ useEffect(()=>{const p=new URLSearchParams(window.location.search);setJobId(p.get('jobId')||'');setOrderId(p.get('orderId')||'');setReady(true);},[]);
+ const load=useCallback(async(signal?:AbortSignal)=>{
+  if(!organizationId||!ready)return;
+  try{const p=new URLSearchParams();if(jobId)p.set('jobId',jobId);else if(orderId)p.set('orderId',orderId);const r=await fetch('/api/printing?'+p,{cache:'no-store',signal});const d=await r.json();if(!r.ok)throw Error(d.error);setJob(d.job||null);setJobs(d.jobs||[]);setBatches(d.batches||[]);setAttempts(d.attempts||[]);setPaper(d.settings.paper_width);setPrinter(d.settings.printer_name);setMode(d.settings.mode);setError('');}catch(e){if(!signal?.aborted)setError(e instanceof Error?e.message:'Não foi possível carregar as impressões.');}
+ },[organizationId,jobId,orderId,ready]);
+ useEffect(()=>{const abort=new AbortController();void load(abort.signal);return()=>abort.abort();},[load,revision]);
+ function selectJob(id:string){setJob(null);setJobId(id);window.history.replaceState(null,'','/cozinha/imprimir'+(id?'?jobId='+encodeURIComponent(id):orderId?'?orderId='+encodeURIComponent(orderId):''));}
+ async function action(kind:string,batchId?:string){
+  if(busy)return;setBusy(true);setError('');
+  const key=JSON.stringify([kind,jobId,orderId,batchId,failure]);
+  if(pending.current?.key!==key)pending.current={key,requestId:crypto.randomUUID()};
+  try{const body=kind==='enqueue'?{action:kind,orderId,batchId,requestId:pending.current.requestId}:{action:kind,jobId,requestId:pending.current.requestId,...(kind==='failed'?{details:failure.trim()||'Falha informada pelo funcionário.'}:{})};
+   const r=await fetch('/api/printing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw Error(d.error);pending.current=null;
+   if(kind==='reprint'||kind==='enqueue')selectJob(d.id);else{await load();if(kind==='dialog_opened')window.print();if(kind==='failed')setFailure('');}
+  }catch(e){setError(e instanceof Error?e.message:'Falha ao registrar a impressão. A cozinha digital continua disponível.');}finally{setBusy(false);}
+ }
+ return <main className="print-page"><div className="no-print"><a href="/cozinha">← Voltar à cozinha</a><h1>Impressões de cozinha</h1><p>Impressora: {printer||'selecione no diálogo do computador'} · Papel {paper} mm · Modo {mode==='digital'?'digital':mode==='hybrid'?'híbrido':'impressão'}</p><p>O navegador abre o diálogo do sistema. A saída no papel só é registrada após sua confirmação; fechar o diálogo não confirma a impressão.</p>{error&&<p role="alert">{error}</p>}
+ {!jobId&&<><h2>Últimas impressões</h2>{!jobs.length&&<p>Nenhuma impressão registrada{orderId?' para este pedido':''}.</p>}<ul style={{listStyle:'none',padding:0}}>{jobs.map(j=><li key={j.id} style={{padding:'12px 0',borderBottom:'1px solid var(--border)'}}><button onClick={()=>selectJob(j.id)}>Pedido #{j.order_number}{j.table_label?' · '+j.table_label:''}{j.reprint_of?' · Reimpressão':j.new_items==='true'?' · Novos itens':''}</button><p>{statusName[j.status]} · {new Date(j.created_at).toLocaleString('pt-BR')}</p></li>)}</ul>{batches.length>0&&<><h2>Lotes deste pedido</h2><p>Para uma cópia extra de um lote já impresso, abra-o no histórico e escolha Reimprimir.</p>{batches.map(batch=><p key={batch.batch_id}><button disabled={busy} onClick={()=>void action('enqueue',batch.batch_id)}>Abrir lote de {new Date(batch.created_at).toLocaleTimeString('pt-BR')} · {batch.item_count} itens</button></p>)}</>}</>}
+ {job&&<><button onClick={()=>selectJob('')}>Voltar ao histórico</button><h2>Pedido #{job.snapshot.order_number}{job.reprint_of?' · REIMPRESSÃO':''}</h2><p role="status">{statusName[job.status]}</p><div style={{display:'flex',gap:8,flexWrap:'wrap'}}><button disabled={busy||['confirmed','dialog_opened'].includes(job.status)} onClick={()=>void action('dialog_opened')}>{busy?'Registrando…':'Abrir diálogo de impressão'}</button>{job.status==='dialog_opened'&&<button disabled={busy} onClick={()=>void action('confirmed')}>Confirmei a saída no papel</button>}<button disabled={busy} onClick={()=>void action('reprint')}>Criar reimpressão</button></div><label>Relatar falha ou cancelamento<textarea value={failure} maxLength={500} onChange={e=>setFailure(e.target.value)} placeholder="Ex.: sem papel, impressora offline ou diálogo cancelado"/></label><button disabled={busy} onClick={()=>void action('failed')}>Registrar falha</button><details><summary>Histórico deste envio ({attempts.length})</summary><ul>{attempts.map((a,i)=><li key={i}>{new Date(a.created_at).toLocaleString('pt-BR')} · {statusName[a.action]}{a.details?' · '+a.details:''}</li>)}</ul></details></>}
+ </div>{job&&<article className="thermal-ticket" style={{background:'white',color:'#111',padding:18,maxWidth:360,margin:'24px auto',fontFamily:'monospace'}}><h1>COZINHA #{job.snapshot.order_number}</h1>{job.reprint_of&&<h2>REIMPRESSÃO</h2>}{job.snapshot.new_items&&<h2>NOVOS ITENS</h2>}<p>{job.snapshot.establishment_name}</p><p>{job.snapshot.channel} {job.snapshot.table_label||'Balcão'}</p><p>{new Date(job.snapshot.created_at).toLocaleString('pt-BR')}</p><hr/>{job.snapshot.items.map(item=><section key={item.id}><h2>{item.quantity} × {item.name}</h2>{item.addons.length>0&&<p>Adicionais: {item.addons.join(', ')}</p>}{item.notes&&<p>Obs.: {item.notes}</p>}</section>)}{job.snapshot.notes&&<p>OBS. GERAL: {job.snapshot.notes}</p>}<hr/><p>Somente os itens deste lote<br/>Pedido para preparo — não fiscal</p><p>MeuPedido · Kumo</p></article>}
+ <style jsx global>{`@media print{.no-print,.operational-live{display:none!important}@page{size:auto;margin:3mm}.print-page{margin:0!important;padding:0!important}.print-page .thermal-ticket{width:${paper-6}mm!important;max-width:${paper-6}mm!important;font-family:monospace!important;font-size:11px!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important}.thermal-ticket h1,.thermal-ticket h2{font-family:monospace!important;font-size:15px!important;letter-spacing:0}.thermal-ticket p{overflow-wrap:anywhere}body{background:white!important;margin:0}}`}</style></main>;
 }

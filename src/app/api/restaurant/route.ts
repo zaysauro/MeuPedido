@@ -29,9 +29,8 @@ async function handlePOST(req:Request){
  const b=await req.json() as Record<string,unknown>,org=b.organizationId;
  if(typeof org!=='string'||!uuid.test(org))return bad('invalid_organization');
  const sql=getDb();
- const members=await sql`SELECT role FROM organization_members WHERE organization_id=${org}::uuid AND user_id=${session.user.id}`;
- if(!members.length)return bad('forbidden',403);
- if(!['owner','admin'].includes(String(members[0].role)))return bad('forbidden',403);
+ const permission=await sql`SELECT restaurant_has_permission(${org}::uuid,${session.user.id},'manage') AS allowed`;
+ if(!permission[0]?.allowed)return bad('forbidden',403);
  const name=typeof b.name==='string'?b.name.trim():'';
  if(b.resource==='tables'){
  if(name.length<1||name.length>60)return bad('invalid_name');

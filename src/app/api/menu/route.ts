@@ -14,7 +14,7 @@ async function handleGET(request:Request) {
     if(!orgId || !/^[0-9a-f-]{36}$/i.test(orgId))return NextResponse.json({error:'invalid_organization'},{status:400});
     const sql=getDb();
     const rows=await sql`
-      SELECT i.id,i.name,i.description,i.price_cents,i.image_url,i.available,i.category_id,
+      SELECT i.id,i.name,i.description,i.price_cents,i.image_url,i.available,i.requires_preparation,i.category_id,
              c.name AS category_name
       FROM restaurant_menu_items i
       LEFT JOIN restaurant_categories c
